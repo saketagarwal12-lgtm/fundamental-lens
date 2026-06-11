@@ -1,42 +1,42 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, ChevronRight, Download, Bell, Star, ArrowLeft,
-  TrendingUp, MessageSquare, Send, BookOpen,
+  Download, Bell, Star, ArrowLeft, ChevronDown, ChevronRight,
+  TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
+  Users, MapPin, Layers, AlertTriangle,
 } from 'lucide-react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart,
 } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
 import { GradeBadge, gradeBarColor } from '../../../components/GradeBadge';
 import { MetricCard } from '../../../components/MetricCard';
-import {
-  healthScoreSeries, scorecard, financials,
-  qualitativeMetrics, ownershipData, borrowerMix,
-  ncdIssuances, materialDevelopments, externalRatings,
-  sectorOutlook, aiQAPairs,
-} from '../../../data/krazybee';
+import { YieldGauge } from '../../../components/YieldGauge';
+import { PeerYieldRange } from '../../../components/PeerYieldRange';
+import { CovenantTable } from '../../../components/CovenantTable';
 import { companies } from '../../../data/companies';
+import { getReport } from '../../../data/reports';
+import type { CompanyReport } from '../../../data/reports';
+import type { ScorecardPillar, FinancialSection, ScorecardFactor } from '../../../data/krazybee';
 
 type Section =
-  | 'overview'
-  | 'business'
-  | 'financial'
-  | 'external'
-  | 'developments'
-  | 'ncd'
-  | 'sector'
-  | 'summary'
-  | 'ai';
+  | 'overview' | 'business' | 'financial' | 'peers' | 'external'
+  | 'developments' | 'ncd' | 'sector' | 'summary' | 'ai';
 
-const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1'];
+const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1', '#0EA5A0', '#60A5FA', '#F472B6', '#FACC15', '#94A3B8', '#22D3EE'];
 
-// ── Health Score Chart ──────────────────────────────────────────────────────
+const latest = (sec: FinancialSection | undefined, label: string): string => {
+  if (!sec) return '—';
+  const m = sec.metrics.find(x => x.label === label);
+  if (!m) return '—';
+  const v = [...m.values].reverse().find(x => x.value !== null);
+  return v && v.value !== null ? `${v.value.toLocaleString()}${m.unit === '%' ? '%' : m.unit === 'x' ? 'x' : ''}` : '—';
+};
 
-const CustomDot = (props: {
-  cx?: number; cy?: number; payload?: { event?: { direction: 'up' | 'down' } };
-}) => {
+// ── Health Score Chart bits ──────────────────────────────────────────────────
+
+const CustomDot = (props: { cx?: number; cy?: number; payload?: { event?: { direction: 'up' | 'down' } } }) => {
   const { cx = 0, cy = 0, payload } = props;
   if (!payload?.event) return <circle cx={cx} cy={cy} r={3} fill="#2DD4BF" />;
   const color = payload.event.direction === 'up' ? '#34D399' : '#FB7185';
@@ -55,15 +55,9 @@ const CustomTooltip = ({ active, payload }: {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div
-      className="rounded-xl p-4 max-w-xs"
-      style={{ background: 'rgba(15,35,38,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}
-    >
+    <div className="rounded-xl p-4 max-w-xs" style={{ background: 'rgba(15,35,38,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
       <p className="font-medium text-primary-text text-sm">{d.month}</p>
-      <p
-        className="font-mono-nums font-bold text-lg"
-        style={{ color: d.score >= 70 ? '#34D399' : d.score >= 55 ? '#FBBF24' : '#FB7185' }}
-      >
+      <p className="font-mono-nums font-bold text-lg" style={{ color: d.score >= 70 ? '#34D399' : d.score >= 55 ? '#FBBF24' : '#FB7185' }}>
         {d.score}/100
       </p>
       {d.event && (
@@ -78,19 +72,16 @@ const CustomTooltip = ({ active, payload }: {
   );
 };
 
-// ── Scorecard Pillar ──────────────────────────────────────────────────────────
+// ── Scorecard pillar row ──────────────────────────────────────────────────────
 
 const PillarRow: React.FC<{
-  pillar: typeof scorecard[0];
+  pillar: ScorecardPillar;
   onFactorClick: (name: string) => void;
   activeFactorName: string | null;
 }> = ({ pillar, onFactorClick, activeFactorName }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div
-      className="rounded-xl overflow-hidden mb-3"
-      style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-    >
+    <div className="rounded-xl overflow-hidden mb-3" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center gap-3 px-5 py-4 transition-colors"
@@ -104,54 +95,30 @@ const PillarRow: React.FC<{
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div
-            className="w-32 h-1.5 rounded-full overflow-hidden hidden sm:block"
-            style={{ background: 'rgba(255,255,255,0.07)' }}
-          >
+          <div className="w-32 h-1.5 rounded-full overflow-hidden hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }}>
             <div className="h-full rounded-full" style={{ width: `${pillar.pct}%`, backgroundColor: gradeBarColor(pillar.grade) }} />
           </div>
-          <span
-            className="font-mono-nums text-sm font-semibold w-9 text-right"
-            style={{ color: gradeBarColor(pillar.grade) }}
-          >
-            {pillar.pct}%
-          </span>
-          {open
-            ? <ChevronDown size={15} className="text-muted-text" />
-            : <ChevronRight size={15} className="text-muted-text" />
-          }
+          <span className="font-mono-nums text-sm font-semibold w-9 text-right" style={{ color: gradeBarColor(pillar.grade) }}>{pillar.pct}%</span>
+          {open ? <ChevronDown size={15} className="text-muted-text" /> : <ChevronRight size={15} className="text-muted-text" />}
         </div>
       </button>
       {open && (
-        <div
-          className="border-t px-5 py-3 space-y-2"
-          style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
-        >
-          {pillar.factors.map(f => (
+        <div className="border-t px-5 py-3 space-y-2" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
+          {pillar.factors.map((f: ScorecardFactor) => (
             <button
               key={f.name}
               onClick={() => onFactorClick(f.name)}
               className="w-full flex items-center gap-3 py-2 px-2 rounded-lg transition-colors text-left"
-              style={activeFactorName === f.name
-                ? { background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.15)' }
-                : { border: '1px solid transparent' }}
+              style={activeFactorName === f.name ? { background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.15)' } : { border: '1px solid transparent' }}
               onMouseEnter={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
               onMouseLeave={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'transparent'; }}
             >
               <span className="text-sm text-primary-text flex-1 min-w-0 truncate">{f.name}</span>
               <GradeBadge grade={f.grade} compact />
-              <div
-                className="w-20 h-1.5 rounded-full overflow-hidden hidden sm:block"
-                style={{ background: 'rgba(255,255,255,0.07)' }}
-              >
+              <div className="w-20 h-1.5 rounded-full overflow-hidden hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }}>
                 <div className="h-full rounded-full" style={{ width: `${f.pct}%`, backgroundColor: gradeBarColor(f.grade) }} />
               </div>
-              <span
-                className="font-mono-nums text-xs font-medium w-8 text-right"
-                style={{ color: gradeBarColor(f.grade) }}
-              >
-                {f.pct}%
-              </span>
+              <span className="font-mono-nums text-xs font-medium w-8 text-right" style={{ color: gradeBarColor(f.grade) }}>{f.pct}%</span>
             </button>
           ))}
         </div>
@@ -160,10 +127,33 @@ const PillarRow: React.FC<{
   );
 };
 
-// ── Financial Section ──────────────────────────────────────────────────────────
+// ── Scoring heatmap ────────────────────────────────────────────────────────────
 
-const FinancialPanel: React.FC<{ sectionKey: string }> = ({ sectionKey }) => {
-  const sec = financials[sectionKey];
+const Heatmap: React.FC<{ scorecard: ScorecardPillar[] }> = ({ scorecard }) => (
+  <div className="space-y-2">
+    {scorecard.map(p => (
+      <div key={p.name} className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-text w-full sm:w-44 shrink-0 truncate">{p.name}</span>
+        <div className="flex gap-1 flex-wrap">
+          {p.factors.map(f => (
+            <div
+              key={f.name}
+              title={`${f.name}: ${f.grade} ${f.pct}%`}
+              className="w-8 h-8 rounded flex items-center justify-center text-[10px] font-mono-nums font-semibold"
+              style={{ background: `${gradeBarColor(f.grade)}26`, color: gradeBarColor(f.grade), border: `1px solid ${gradeBarColor(f.grade)}40` }}
+            >
+              {f.pct}
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ── Financial panel ─────────────────────────────────────────────────────────────
+
+const FinancialPanel: React.FC<{ sec: FinancialSection | undefined }> = ({ sec }) => {
   if (!sec) return <p className="text-muted-text text-sm p-4">Select a financial section.</p>;
   const periods = sec.metrics[0]?.values.map(v => v.period) ?? [];
   return (
@@ -177,19 +167,14 @@ const FinancialPanel: React.FC<{ sectionKey: string }> = ({ sectionKey }) => {
           <thead>
             <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Metric</th>
-              {periods.map(p => (
-                <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">{p}</th>
-              ))}
+              {periods.map(p => <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">{p}</th>)}
             </tr>
           </thead>
           <tbody>
             {sec.metrics.map(m => (
-              <tr
-                key={m.label}
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+              <tr key={m.label} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                 <td className="px-5 py-3">
                   <span className="font-medium text-primary-text">{m.label}</span>
                   <span className="text-xs text-muted-text ml-1.5">{m.unit}</span>
@@ -212,7 +197,37 @@ const FinancialPanel: React.FC<{ sectionKey: string }> = ({ sectionKey }) => {
   );
 };
 
-// ── Main Component ─────────────────────────────────────────────────────────────
+// ── Donut helper ────────────────────────────────────────────────────────────────
+
+const Donut: React.FC<{ title: string; data: { name: string; pct: number; aum?: number }[]; limit?: number }> = ({ title, data, limit }) => {
+  const shown = limit ? data.slice(0, limit) : data;
+  return (
+    <div className="glass-card p-5">
+      <h3 className="font-semibold text-primary-text text-sm mb-4">{title}</h3>
+      <div className="flex gap-4 items-center">
+        <PieChart width={120} height={120}>
+          <Pie data={data} cx={55} cy={55} innerRadius={35} outerRadius={55} dataKey="pct" paddingAngle={1}>
+            {data.map((_, i) => <Cell key={i} fill={VIZ_COLORS[i % VIZ_COLORS.length]} />)}
+          </Pie>
+        </PieChart>
+        <div className="flex-1 space-y-1 min-w-0">
+          {shown.map((o, i) => (
+            <div key={o.name} className="flex items-center gap-2 text-xs">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+              <span className="truncate text-muted-text flex-1">{o.name}</span>
+              <span className="font-mono-nums font-medium text-primary-text">
+                {o.pct}%{o.aum != null ? ` · ₹${o.aum.toLocaleString()} Cr` : ''}
+              </span>
+            </div>
+          ))}
+          {limit && data.length > limit && <p className="text-[10px] text-muted-text pl-4 mt-1">+{data.length - limit} more</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main ────────────────────────────────────────────────────────────────────────
 
 export const CompanyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -226,43 +241,41 @@ export const CompanyPage: React.FC = () => {
   const [readingMode, setReadingMode] = useState(false);
 
   const company = companies.find(c => c.id === id);
+  const report: CompanyReport | undefined = getReport(id);
 
   if (!company) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-muted-text">Company not found.</p>
-        <button onClick={() => navigate('/app/dashboard')} className="text-brand-teal hover:underline text-sm">
-          Back to Dashboard
-        </button>
+        <button onClick={() => navigate('/app/dashboard')} className="text-brand-teal hover:underline text-sm">Back to Dashboard</button>
       </div>
     );
   }
-
-  const isKrazybee = id === 'krazybee';
-
-  const handleAiQuery = (q: string) => {
-    const q_lower = q.toLowerCase();
-    setAiLoading(true);
-    setAiAnswer(null);
-    setTimeout(() => {
-      const match = aiQAPairs.find(p =>
-        q_lower.includes(p.q.toLowerCase().split(' ').slice(0, 3).join(' ').toLowerCase()) ||
-        p.q.toLowerCase().split(' ').some(word => word.length > 4 && q_lower.includes(word))
-      );
-      setAiAnswer(match?.a ?? "This is a prototype Q&A. Try asking about liquidity, GNPA trend, NCD pricing, or ownership structure.");
-      setAiLoading(false);
-    }, 600);
-  };
 
   const recStyle = (rec: string): React.CSSProperties =>
     rec === 'Subscribe' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
     rec === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
     { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
 
+  const handleAiQuery = (q: string) => {
+    if (!report) return;
+    const ql = q.toLowerCase();
+    setAiLoading(true);
+    setAiAnswer(null);
+    setTimeout(() => {
+      const match = report.aiQAPairs.find(p =>
+        p.q.toLowerCase().split(' ').some(w => w.length > 4 && ql.includes(w))
+      );
+      setAiAnswer(match?.a ?? 'This prototype answers from a fixed set of grounded examples; connected to a live model it would answer any question from the report and model figures.');
+      setAiLoading(false);
+    }, 600);
+  };
+
   const navItems: { key: Section; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'business', label: 'Business & Management' },
     { key: 'financial', label: 'Financial Analysis' },
+    { key: 'peers', label: 'Peer Comparison' },
     { key: 'external', label: 'External Ratings' },
     { key: 'developments', label: 'Recent Developments' },
     { key: 'ncd', label: 'NCD Issuances' },
@@ -271,31 +284,25 @@ export const CompanyPage: React.FC = () => {
     { key: 'ai', label: 'Ask AI' },
   ];
 
+  const firstName = company.name.split(' ')[0];
+  const subSectorLabel = report?.subSectorKey === 'gold' ? 'Gold-Loan' : report?.subSectorKey === 'mfi' ? 'Microfinance (MFI)' : 'Digital Unsecured PL';
+
   return (
     <div className="flex flex-col lg:flex-row min-h-full page-fade">
       {/* Left nav rail */}
-      <aside
-        className="lg:w-52 lg:shrink-0 border-b lg:border-b-0 lg:border-r"
-        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}
-      >
+      <aside className="lg:w-52 lg:shrink-0 border-b lg:border-b-0 lg:border-r"
+        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <button
-            onClick={() => navigate('/app/dashboard')}
-            className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors"
-          >
-            <ArrowLeft size={13} /> Back
+          <button onClick={() => navigate('/app/dashboard')} className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
+            <ArrowLeft size={13} /> Back to dashboard
           </button>
         </div>
         <nav className="p-2 lg:py-4">
           <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0">
             {navItems.map(item => (
-              <button
-                key={item.key}
+              <button key={item.key}
                 onClick={() => { setSection(item.key); setActiveFactorName(null); }}
-                className={`shrink-0 lg:w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                  section === item.key ? 'nav-item-active' : 'nav-item-inactive'
-                }`}
-              >
+                className={`shrink-0 lg:w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
                 {item.label}
               </button>
             ))}
@@ -305,30 +312,18 @@ export const CompanyPage: React.FC = () => {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
-        {/* Company header */}
-        <div
-          className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
-          style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
-        >
+        {/* Header */}
+        <div className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
+          style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="flex items-start gap-5 flex-wrap">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h1 className="text-lg font-semibold text-primary-text">{company.name}</h1>
-                <span
-                  className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
-                  style={recStyle(company.recommendation)}
-                >
-                  {company.recommendation}
-                </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={recStyle(company.recommendation)}>{company.recommendation}</span>
               </div>
-              <p className="text-xs text-muted-text">
-                {company.sector} · {company.subSector} · {company.hq} · Est. {company.established}
-              </p>
+              <p className="text-xs text-muted-text">{company.sector} · {company.subSector} · {company.hq} · Est. {company.established}</p>
               <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-text">
-                <span
-                  className="px-2 py-0.5 rounded"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
+                <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                   {company.externalRating} · {company.ratingAgency}
                 </span>
                 <span>Internal: {company.internalRating}/15</span>
@@ -338,65 +333,68 @@ export const CompanyPage: React.FC = () => {
             <div className="flex items-center gap-4 shrink-0">
               <ScoreRing score={company.healthScore} size={68} strokeWidth={6} />
               <div className="flex flex-col gap-2">
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium"
-                >
-                  <Bell size={13} /> Alert
-                </button>
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"
-                >
-                  <Download size={13} /> PDF
-                </button>
-                <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"
-                >
-                  <Star size={13} /> Watch
-                </button>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium"><Bell size={13} /> Alert</button>
+                <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Download size={13} /> PDF</button>
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Star size={13} /> Watch</button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Non-krazybee placeholder */}
-        {!isKrazybee && (
+        {/* No report → placeholder */}
+        {!report && (
           <div className="p-8 text-center">
             <div className="max-w-md mx-auto">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}
-              >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
                 <TrendingUp size={28} />
               </div>
               <h2 className="text-lg font-semibold text-primary-text mb-2">Full report for {company.name}</h2>
               <p className="text-sm text-muted-text mb-4 leading-relaxed">
-                This is a prototype. Detailed data is available for KrazyBee Services Limited.
-                Full coverage for {company.name} is in pipeline.
+                This issuer is in coverage pipeline. Fully-populated reports are available for KrazyBee, Avanti Finance, Keertana Finserv and Spandana Sphoorty.
               </p>
-              <button
-                onClick={() => navigate('/app/company/krazybee')}
-                className="px-5 py-2.5 rounded-full btn-gradient text-sm font-semibold"
-              >
-                View KrazyBee full report
-              </button>
+              <button onClick={() => navigate('/app/company/krazybee')} className="px-5 py-2.5 rounded-full btn-gradient text-sm font-semibold">View a sample full report</button>
             </div>
           </div>
         )}
 
-        {/* Krazybee content */}
-        {isKrazybee && (
+        {report && (
           <div className="p-6 max-w-4xl">
 
-            {/* ─ OVERVIEW ─ */}
+            {/* ── OVERVIEW ── */}
             {section === 'overview' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">Overview</h2>
 
+                {/* KPI cards (latest from financials) */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-7">
-                  <MetricCard label="On-book AUM (4Q26)" value="₹9,861" unit="Cr" trend="up" delta="₹3,900 Cr YoY" />
-                  <MetricCard label="GNPA (4Q26)" value="1.53" unit="%" trend="up" delta="vs 3.13% FY25" />
-                  <MetricCard label="Total CAR" value="23.55" unit="%" trend="down" delta="vs 29.59% FY25" />
-                  <MetricCard label="NCD YTM" value="10.27" unit="%" highlight />
+                  <MetricCard label="On-book AUM" value={latest(report.financials.assetQuality, 'On-book AUM')} unit="₹ Cr" />
+                  <MetricCard label="GNPA (latest)" value={latest(report.financials.assetQuality, 'GNPA')} />
+                  <MetricCard label="Total CAR" value={latest(report.financials.capitalization, 'Total CAR')} />
+                  <MetricCard label="NCD YTM" value={report.yieldOverview.currentYtm.toFixed(2)} unit="%" highlight />
+                </div>
+
+                {/* Highlight cards */}
+                <div className="grid sm:grid-cols-2 gap-4 mb-7">
+                  <div className="glass-card p-5" style={{ borderColor: 'rgba(45,212,191,0.2)' }}>
+                    <div className="flex items-center gap-2 mb-3"><Lightbulb size={16} style={{ color: '#2DD4BF' }} /><h3 className="font-semibold text-primary-text text-sm">Why this recommendation</h3></div>
+                    <ul className="space-y-2">
+                      {report.recommendationRationale.map(r => (
+                        <li key={r} className="flex gap-2 text-xs text-muted-text leading-relaxed">
+                          <span style={{ color: '#2DD4BF' }} className="shrink-0">▸</span>{r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="glass-card p-5">
+                    <div className="flex items-center gap-2 mb-3"><ShieldCheck size={16} style={{ color: '#34D399' }} /><h3 className="font-semibold text-primary-text text-sm">How your investment is covered</h3></div>
+                    <ul className="space-y-2">
+                      {report.investorProtection.map(r => (
+                        <li key={r} className="flex gap-2 text-xs text-muted-text leading-relaxed">
+                          <span style={{ color: '#34D399' }} className="shrink-0">✓</span>{r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
 
                 {/* Health score chart */}
@@ -404,18 +402,12 @@ export const CompanyPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                     <h3 className="font-semibold text-primary-text text-sm">Health Score — 12-Month Trend</h3>
                     <div className="flex items-center gap-3 text-xs text-muted-text">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#34D399' }} />
-                        Score improvement
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#FB7185' }} />
-                        Score decline
-                      </span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#34D399' }} /> Improvement</span>
+                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#FB7185' }} /> Decline</span>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={healthScoreSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                    <AreaChart data={report.healthScoreSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
                       <defs>
                         <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.2} />
@@ -424,108 +416,85 @@ export const CompanyPage: React.FC = () => {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
                       <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[55, 75]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[50, 75]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Area
-                        type="monotone"
-                        dataKey="score"
-                        stroke="#2DD4BF"
-                        strokeWidth={2}
-                        fill="url(#scoreGrad)"
-                        dot={(props) => <CustomDot {...props} />}
-                        activeDot={{ r: 6, fill: '#2DD4BF' }}
-                      />
+                      <Area type="monotone" dataKey="score" stroke="#2DD4BF" strokeWidth={2} fill="url(#scoreGrad)" dot={(props) => { const { key, ...rest } = props as { key?: string }; return <CustomDot key={key} {...rest} />; }} activeDot={{ r: 6, fill: '#2DD4BF' }} />
                     </AreaChart>
                   </ResponsiveContainer>
-                  <p className="text-[11px] text-muted-text mt-2">Hover data points with arrows to see the reason for score change.</p>
+                  <p className="text-[11px] text-muted-text mt-2">Hover data points with arrows to see the reason for a score change.</p>
+                </div>
+
+                {/* Yield gauge */}
+                <div className="mb-6">
+                  <h3 className="font-semibold text-primary-text text-sm mb-3">Yield Overview</h3>
+                  <YieldGauge data={report.yieldOverview} />
                 </div>
 
                 {/* Scorecard */}
                 <div className="mb-6">
-                  <h3 className="font-semibold text-primary-text text-sm mb-4">Proprietary Scorecard</h3>
-                  {scorecard.map(p => (
-                    <PillarRow
-                      key={p.name}
-                      pillar={p}
-                      onFactorClick={name => {
-                        setActiveFactorName(activeFactorName === name ? null : name);
-                        setSection('business');
-                      }}
-                      activeFactorName={activeFactorName}
-                    />
+                  <h3 className="font-semibold text-primary-text text-sm mb-4">Fundamental Scorecard</h3>
+                  {report.scorecard.map(p => (
+                    <PillarRow key={p.name} pillar={p}
+                      onFactorClick={name => { setActiveFactorName(activeFactorName === name ? null : name); setSection('business'); }}
+                      activeFactorName={activeFactorName} />
                   ))}
                 </div>
 
-                {/* Ownership + borrower mix */}
-                <div className="grid sm:grid-cols-2 gap-5 mb-6">
+                {/* Rating scale + heatmap */}
+                <div className="grid lg:grid-cols-2 gap-5 mb-6">
                   <div className="glass-card p-5">
-                    <h3 className="font-semibold text-primary-text text-sm mb-4">Ownership Structure</h3>
-                    <div className="flex gap-4 items-center">
-                      <PieChart width={120} height={120}>
-                        <Pie data={ownershipData} cx={55} cy={55} innerRadius={35} outerRadius={55} dataKey="pct" paddingAngle={1}>
-                          {ownershipData.map((_, i) => <Cell key={i} fill={VIZ_COLORS[i % VIZ_COLORS.length]} />)}
-                        </Pie>
-                      </PieChart>
-                      <div className="flex-1 space-y-1 min-w-0">
-                        {ownershipData.slice(0, 5).map((o, i) => (
-                          <div key={o.name} className="flex items-center gap-2 text-xs">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
-                            <span className="truncate text-muted-text flex-1">{o.name}</span>
-                            <span className="font-mono-nums font-medium text-primary-text">{o.pct}%</span>
-                          </div>
+                    <h3 className="font-semibold text-primary-text text-sm mb-4">Rating Scale</h3>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                          <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Dimension</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Score</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">%</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Rating</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {report.ratingScale.map(r => (
+                          <tr key={r.dimension} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: r.dimension === 'Combined' ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
+                            <td className="py-2.5 text-primary-text text-xs font-medium">{r.dimension}</td>
+                            <td className="py-2.5 text-right font-mono-nums text-muted-text text-xs">{r.actual}</td>
+                            <td className="py-2.5 text-right font-mono-nums text-primary-text text-xs">{r.pct}%</td>
+                            <td className="py-2.5 text-right font-mono-nums font-semibold text-brand-teal text-xs">{r.ratingNumber}{r.ratingLabel ? ` (${r.ratingLabel})` : ''}</td>
+                          </tr>
                         ))}
-                        <p className="text-[10px] text-muted-text pl-4 mt-1">+{ownershipData.length - 5} more</p>
-                      </div>
-                    </div>
+                      </tbody>
+                    </table>
                   </div>
-
                   <div className="glass-card p-5">
-                    <h3 className="font-semibold text-primary-text text-sm mb-4">Borrower Mix (AUM)</h3>
-                    <div className="flex gap-4 items-center">
-                      <PieChart width={120} height={120}>
-                        <Pie data={borrowerMix} cx={55} cy={55} innerRadius={35} outerRadius={55} dataKey="pct" paddingAngle={2}>
-                          {borrowerMix.map((_, i) => <Cell key={i} fill={VIZ_COLORS[i]} />)}
-                        </Pie>
-                      </PieChart>
-                      <div className="flex-1 space-y-2 min-w-0">
-                        {borrowerMix.map((b, i) => (
-                          <div key={b.name} className="text-xs">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i] }} />
-                              <span className="truncate text-muted-text">{b.name}</span>
-                            </div>
-                            <p className="font-mono-nums font-semibold text-primary-text ml-3.5">{b.pct}% · ₹{b.aum} Cr</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <h3 className="font-semibold text-primary-text text-sm mb-4">Factor Heatmap</h3>
+                    <Heatmap scorecard={report.scorecard} />
                   </div>
                 </div>
+
+                {/* Ownership + product mix */}
+                <div className="grid sm:grid-cols-2 gap-5 mb-3">
+                  <Donut title="Ownership Structure" data={report.ownership} limit={5} />
+                  <Donut title="Product / AUM Mix" data={report.productMix} />
+                </div>
+                <p className="text-xs text-muted-text leading-relaxed mb-2">{report.ownershipNote}</p>
               </div>
             )}
 
-            {/* ─ BUSINESS & MANAGEMENT ─ */}
+            {/* ── BUSINESS & MANAGEMENT ── */}
             {section === 'business' && (
               <div>
                 <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
                   <h2 className="text-base font-semibold text-primary-text">Business & Management</h2>
-                  <button
-                    onClick={() => setReadingMode(v => !v)}
-                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${readingMode ? 'btn-gradient' : 'btn-outline-glass'}`}
-                  >
+                  <button onClick={() => setReadingMode(v => !v)}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${readingMode ? 'btn-gradient' : 'btn-outline-glass'}`}>
                     <BookOpen size={13} /> {readingMode ? 'Exit reading mode' : 'Reading mode'}
                   </button>
                 </div>
-                <div className="space-y-4">
-                  {qualitativeMetrics.map(m => (
-                    <div
-                      key={m.factor}
-                      id={`factor-${m.factor}`}
-                      className={`glass-card p-5 transition-colors ${activeFactorName === m.factor ? '' : ''}`}
-                      style={activeFactorName === m.factor
-                        ? { borderColor: 'rgba(45,212,191,0.3)', boxShadow: '0 0 0 1px rgba(45,212,191,0.15), 0 12px 34px rgba(0,0,0,0.38)' }
-                        : {}}
-                    >
+
+                <div className="space-y-4 mb-6">
+                  {report.qualitative.map(m => (
+                    <div key={m.factor} className="glass-card p-5"
+                      style={activeFactorName === m.factor ? { borderColor: 'rgba(45,212,191,0.3)', boxShadow: '0 0 0 1px rgba(45,212,191,0.15), 0 12px 34px rgba(0,0,0,0.38)' } : {}}>
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
                         <h3 className="font-semibold text-primary-text">{m.factor}</h3>
                         <GradeBadge grade={m.grade} />
@@ -534,103 +503,228 @@ export const CompanyPage: React.FC = () => {
                       <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                         <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(m.grade) }} />
                       </div>
-                      <p
-                        className="text-sm leading-relaxed"
+                      <p className="text-sm leading-relaxed"
                         style={readingMode
                           ? { background: 'rgba(245,240,230,0.95)', color: '#1a1a1a', borderRadius: '12px', padding: '1rem', fontFamily: 'Newsreader, Georgia, serif' }
-                          : { color: '#E9F3F1', fontFamily: 'Newsreader, Georgia, serif' }}
-                      >
+                          : { color: '#E9F3F1', fontFamily: 'Newsreader, Georgia, serif' }}>
                         {m.commentary}
                       </p>
                     </div>
                   ))}
                 </div>
+
+                {/* Management & governance card */}
+                <div className="glass-card p-5 mb-5">
+                  <div className="flex items-center gap-2 mb-4"><Users size={16} style={{ color: '#2DD4BF' }} /><h3 className="font-semibold text-primary-text text-sm">Management & Governance</h3></div>
+                  <div className="space-y-3 mb-4">
+                    {report.management.leadership.map(l => (
+                      <div key={l.name} className="flex gap-3 items-start">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0" style={{ background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' }}>
+                          {l.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm text-primary-text font-medium">{l.name} <span className="text-muted-text font-normal">· {l.role}</span></p>
+                          <p className="text-xs text-muted-text">{l.background}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3 text-xs mb-4">
+                    <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      <p className="text-muted-text mb-1">Board composition</p>
+                      <p className="text-primary-text">{report.management.boardComposition}</p>
+                    </div>
+                    <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      <p className="text-muted-text mb-1">Statutory auditor</p>
+                      <p className="text-primary-text">{report.management.auditor}{report.management.auditorFlag ? ` · ${report.management.auditorFlag}` : ''}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertTriangle size={12} style={{ color: '#FBBF24' }} /> Risk flags</p>
+                    <div className="flex flex-wrap gap-2">
+                      {report.management.riskFlags.map(f => (
+                        <span key={f} className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: 'rgba(251,191,36,0.12)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.25)' }}>{f}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Geographic concentration */}
+                <div className="glass-card p-5">
+                  <div className="flex items-center gap-2 mb-4"><MapPin size={16} style={{ color: '#38BDF8' }} /><h3 className="font-semibold text-primary-text text-sm">Geographic Concentration</h3></div>
+                  <div className="space-y-2 mb-3">
+                    {report.geography.map((g, i) => (
+                      <div key={g.region} className="flex items-center gap-3">
+                        <span className="text-xs text-muted-text w-32 shrink-0 truncate">{g.region}</span>
+                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${g.pct}%`, background: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+                        </div>
+                        <span className="font-mono-nums text-xs text-primary-text w-10 text-right">{g.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  {report.alm.topLenderConcentration && <p className="text-[11px] text-muted-text">Lender concentration: {report.alm.topLenderConcentration}</p>}
+                </div>
               </div>
             )}
 
-            {/* ─ FINANCIAL ANALYSIS ─ */}
+            {/* ── FINANCIAL ANALYSIS ── */}
             {section === 'financial' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">Financial Analysis</h2>
                 <div className="pill-track flex gap-1 mb-6 flex-wrap">
-                  {Object.keys(financials).map(k => (
-                    <button
-                      key={k}
-                      onClick={() => setFinancialTab(k)}
-                      className={financialTab === k ? 'pill-active' : 'pill-inactive'}
-                    >
-                      {k === 'fundingLiquidity' ? 'Funding & Liquidity' :
-                       k === 'capitalization' ? 'Capitalization' :
-                       k === 'profitability' ? 'Profitability' : 'Asset Quality'}
+                  {Object.keys(report.financials).map(k => (
+                    <button key={k} onClick={() => setFinancialTab(k)} className={financialTab === k ? 'pill-active' : 'pill-inactive'}>
+                      {k === 'fundingLiquidity' ? 'Funding & Liquidity' : k === 'capitalization' ? 'Capitalization' : k === 'profitability' ? 'Profitability' : 'Asset Quality'}
                     </button>
                   ))}
                 </div>
-                <FinancialPanel sectionKey={financialTab} />
+                <FinancialPanel sec={report.financials[financialTab]} />
+
+                {/* Funding & liquidity extras */}
+                {financialTab === 'fundingLiquidity' && (
+                  <div className="grid sm:grid-cols-2 gap-5 mt-5">
+                    <div className="glass-card p-5">
+                      <h3 className="font-semibold text-primary-text text-sm mb-4 flex items-center gap-2"><Layers size={15} style={{ color: '#2DD4BF' }} /> Funding Mix</h3>
+                      <div className="space-y-2">
+                        {report.fundingMix.map((f, i) => (
+                          <div key={f.name} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-text w-28 shrink-0 truncate">{f.name}</span>
+                            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                              <div className="h-full rounded-full" style={{ width: `${f.pct}%`, background: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+                            </div>
+                            <span className="font-mono-nums text-xs text-primary-text w-9 text-right">{f.pct}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="glass-card p-5">
+                      <h3 className="font-semibold text-primary-text text-sm mb-4">ALM &amp; Liquidity</h3>
+                      <div className="space-y-3 text-xs">
+                        <div className="flex justify-between"><span className="text-muted-text">Avg asset tenor</span><span className="font-mono-nums text-primary-text">{report.alm.assetTenorMonths}m</span></div>
+                        <div className="flex justify-between"><span className="text-muted-text">Avg liability tenor</span><span className="font-mono-nums text-primary-text">{report.alm.liabilityTenorMonths}m</span></div>
+                        <div className="flex justify-between"><span className="text-muted-text">LCR</span><span className="font-mono-nums text-brand-teal font-semibold">{report.alm.lcr}%</span></div>
+                        {report.alm.ccePctOf12mRepayments != null && <div className="flex justify-between"><span className="text-muted-text">CCE / 12m repayments</span><span className="font-mono-nums text-primary-text">{report.alm.ccePctOf12mRepayments}%</span></div>}
+                        <p className="text-muted-text pt-2 leading-relaxed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>{report.alm.cumulativeGapNote}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Asset-quality detail */}
+                {financialTab === 'assetQuality' && (
+                  <div className="mt-5 space-y-5">
+                    {report.segmentAssetQuality && (
+                      <div className="glass-card p-5">
+                        <h3 className="font-semibold text-primary-text text-sm mb-4">Asset Quality by Segment</h3>
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                              <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Segment</th>
+                              <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">GNPA</th>
+                              <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">NNPA</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {report.segmentAssetQuality.map(s => (
+                              <tr key={s.segment} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                <td className="py-2.5 text-primary-text text-xs">{s.segment}</td>
+                                <td className="py-2.5 text-right font-mono-nums text-xs" style={{ color: s.gnpa > 5 ? '#FB7185' : s.gnpa > 1 ? '#FBBF24' : '#34D399' }}>{s.gnpa.toFixed(2)}%</td>
+                                <td className="py-2.5 text-right font-mono-nums text-xs text-muted-text">{s.nnpa.toFixed(2)}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {report.ltvBuckets && (
+                      <div className="glass-card p-5">
+                        <h3 className="font-semibold text-primary-text text-sm mb-4">LTV Bucket Distribution</h3>
+                        <div className="space-y-2">
+                          {report.ltvBuckets.map((b, i) => (
+                            <div key={b.bucket} className="flex items-center gap-3">
+                              <span className="text-xs text-muted-text w-20 shrink-0 font-mono-nums">{b.bucket}</span>
+                              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                                <div className="h-full rounded-full" style={{ width: `${b.pct}%`, background: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+                              </div>
+                              <span className="font-mono-nums text-xs text-primary-text w-10 text-right">{b.pct}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {report.collectionEfficiency && (
+                      <div className="glass-card p-5">
+                        <h3 className="font-semibold text-primary-text text-sm mb-4">Collection Efficiency Trend</h3>
+                        <div className="flex items-end gap-4 h-32">
+                          {report.collectionEfficiency.map(c => (
+                            <div key={c.period} className="flex-1 flex flex-col items-center gap-2">
+                              <div className="w-full rounded-t-lg flex items-end justify-center" style={{ height: `${c.value}%`, background: 'linear-gradient(180deg,#2DD4BF,#22D3EE)', minHeight: 8 }}>
+                                <span className="font-mono-nums text-[11px] font-bold pb-1" style={{ color: '#0B1F20' }}>{c.value}%</span>
+                              </div>
+                              <span className="text-[11px] text-muted-text">{c.period}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* ─ EXTERNAL RATINGS ─ */}
+            {/* ── PEER COMPARISON ── */}
+            {section === 'peers' && (
+              <div>
+                <h2 className="text-base font-semibold text-primary-text mb-2">Peer Comparison</h2>
+                <p className="text-sm text-muted-text mb-5">This issue's current NCD ({report.yieldOverview.currentYtm.toFixed(2)}% YTM) vs the {subSectorLabel} peer set.</p>
+                <PeerYieldRange peers={report.peers} thisIssuer={firstName} thisYtm={report.yieldOverview.currentYtm} thisRating={company.externalRating.split(' ')[0]} />
+              </div>
+            )}
+
+            {/* ── EXTERNAL RATINGS ── */}
             {section === 'external' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">External Ratings</h2>
-                {externalRatings.map(r => (
-                  <div key={r.agency} className="glass-card p-6 mb-4">
-                    <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-                      <div>
-                        <p className="text-xs text-muted-text uppercase tracking-wider mb-1">{r.agency}</p>
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono-nums text-2xl font-bold text-primary-text">{r.rating}</span>
-                          <span
-                            className="text-xs px-2 py-0.5 rounded font-medium"
-                            style={r.outlook === 'Stable'
-                              ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' }
-                              : { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }}
-                          >
-                            {r.outlook}
-                          </span>
-                        </div>
+                <div className="glass-card p-6 mb-4">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                    <div>
+                      <p className="text-xs text-muted-text uppercase tracking-wider mb-1">{report.externalRating.agency}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono-nums text-2xl font-bold text-primary-text">{report.externalRating.rating}</span>
+                        <span className="text-xs px-2 py-0.5 rounded font-medium" style={report.externalRating.outlook === 'Stable' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } : { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }}>{report.externalRating.outlook}</span>
                       </div>
-                      <span
-                        className="text-xs text-muted-text px-3 py-1.5 rounded"
-                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
-                      >
-                        {r.date}
-                      </span>
                     </div>
-                    <div className="rounded-lg p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Rating Rationale</p>
-                      <p className="text-sm text-primary-text font-serif leading-relaxed">{r.rationale}</p>
-                    </div>
+                    <span className="text-xs text-muted-text px-3 py-1.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>{report.externalRating.date}</span>
                   </div>
-                ))}
-                <div
-                  className="rounded-xl p-5 text-sm"
-                  style={{ background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.2)' }}
-                >
-                  <p className="font-medium text-brand-teal mb-1">Our view vs agency view</p>
-                  <p className="text-muted-text text-xs leading-relaxed">
-                    Our internal rating of 7/15 (CARE: A) broadly aligns with the agency rating. Key divergence: we weight
-                    liquidity thin-ness and borrower profile risk more heavily, resulting in a slightly more cautious near-term
-                    outlook despite the positive unicorn development.
-                  </p>
+                  <div className="rounded-lg p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Rating Rationale</p>
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{report.externalRating.rationale}</p>
+                  </div>
+                </div>
+                <div className="glass-card p-5">
+                  <h3 className="font-semibold text-primary-text text-sm mb-3">Rating History</h3>
+                  <div className="space-y-2">
+                    {report.ratingHistory.map(h => (
+                      <div key={h.date} className="flex gap-3 text-xs">
+                        <span className="font-mono-nums text-brand-teal shrink-0 w-20">{h.date}</span>
+                        <span className="text-muted-text">{h.note}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* ─ DEVELOPMENTS ─ */}
+            {/* ── DEVELOPMENTS ── */}
             {section === 'developments' && (
               <div>
-                <h2 className="text-base font-semibold text-primary-text mb-5">Recent Developments</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-5">Recent Material Developments</h2>
                 <div className="space-y-4">
-                  {materialDevelopments.map(d => (
+                  {report.materialDevelopments.map(d => (
                     <div key={d.title} className="glass-card p-5">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span
-                          className="text-xs font-mono-nums font-medium px-2.5 py-1 rounded"
-                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CB3B1' }}
-                        >
-                          {d.date}
-                        </span>
+                        <span className="text-xs font-mono-nums font-medium px-2.5 py-1 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CB3B1' }}>{d.date}</span>
                         <h3 className="font-semibold text-primary-text text-sm">{d.title}</h3>
                       </div>
                       <p className="text-sm text-muted-text leading-relaxed font-serif">{d.body}</p>
@@ -640,90 +734,108 @@ export const CompanyPage: React.FC = () => {
               </div>
             )}
 
-            {/* ─ NCD ISSUANCES ─ */}
+            {/* ── NCD ISSUANCES ── */}
             {section === 'ncd' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">NCD Issuances</h2>
-                <div className="glass-card overflow-hidden mb-4">
-                  <table className="w-full text-sm overflow-x-auto">
-                    <thead>
-                      <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                        <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">ISIN</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Coupon</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">YTM</th>
-                        <th className="text-center px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Tenor</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Size (₹ Cr)</th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Maturity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ncdIssuances.map(n => (
-                        <tr
-                          key={n.isin}
-                          style={{
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
-                            background: n.current ? 'rgba(45,212,191,0.06)' : 'transparent',
-                          }}
-                          onMouseEnter={e => { if (!n.current) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                          onMouseLeave={e => { if (!n.current) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                          <td className="px-5 py-3">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono-nums text-xs text-brand-teal">{n.isin}</span>
-                              {n.current && (
-                                <span
-                                  className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase"
-                                  style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}
-                                >
-                                  Current
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.coupon.toFixed(2)}%</td>
-                          <td className="px-4 py-3 text-right font-mono-nums font-semibold text-brand-teal">{n.ytm.toFixed(2)}%</td>
-                          <td className="px-4 py-3 text-center text-muted-text text-xs">{n.tenor}</td>
-                          <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.size.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-xs text-muted-text">{n.maturity}</td>
+                <div className="glass-card overflow-hidden mb-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                          <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">ISIN</th>
+                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Coupon</th>
+                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">YTM</th>
+                          <th className="text-center px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Tenor</th>
+                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Size (₹ Cr)</th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Maturity</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {report.ncdIssuances.map(n => (
+                          <tr key={n.isin} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.current ? 'rgba(45,212,191,0.06)' : 'transparent' }}
+                            onMouseEnter={e => { if (!n.current) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                            onMouseLeave={e => { if (!n.current) e.currentTarget.style.background = 'transparent'; }}>
+                            <td className="px-5 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono-nums text-xs text-brand-teal">{n.isin}</span>
+                                {n.current && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}>Current</span>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.coupon.toFixed(2)}%</td>
+                            <td className="px-4 py-3 text-right font-mono-nums font-semibold text-brand-teal">{n.ytm.toFixed(2)}%</td>
+                            <td className="px-4 py-3 text-center text-muted-text text-xs">{n.tenor}</td>
+                            <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.size.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-xs text-muted-text">{n.maturity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div
-                  className="p-4 rounded-xl text-xs text-muted-text leading-relaxed"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-                >
-                  YTM figures are indicative as of research date. Actual secondary market YTM may vary.
-                  This is not an offer to buy or sell securities.
+
+                {/* Issuance structure cards */}
+                <h3 className="font-semibold text-primary-text text-sm mb-3">Issuance Structure</h3>
+                <div className="grid sm:grid-cols-2 gap-4 mb-6">
+                  {report.issuanceStructures.map(s => (
+                    <div key={s.isin} className="glass-card p-5" style={s.current ? { borderColor: 'rgba(45,212,191,0.25)' } : {}}>
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span className="font-mono-nums text-sm text-brand-teal">{s.isin}</span>
+                        {s.current && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}>Current</span>}
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        {[
+                          ['Instrument', s.instrument],
+                          ['Ranking', s.ranking],
+                          ['Coupon', `${s.coupon.toFixed(2)}% · ${s.couponFrequency}`],
+                          ['YTM (orig → curr)', `${s.originalYtm.toFixed(2)}% → ${s.currentYtm.toFixed(2)}%`],
+                          ['Face value', s.faceValueLabel],
+                          ['Issue size', `₹${s.issueSize.toLocaleString()} Cr`],
+                          ['Allotment', s.allotmentDate],
+                          ['Maturity', s.maturity],
+                          ['Residual tenor', `${s.residualDays} days`],
+                          ['Security cover', s.securityCover],
+                          ['Step clause', s.stepClause],
+                          ['Mandatory redemption', s.redemptionTrigger],
+                        ].map(([k, v]) => (
+                          <div key={k} className="flex gap-3 justify-between">
+                            <span className="text-muted-text shrink-0">{k}</span>
+                            <span className="text-primary-text text-right">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Covenants */}
+                <h3 className="font-semibold text-primary-text text-sm mb-3">Financial Covenants</h3>
+                <CovenantTable covenants={report.covenants} />
+
+                <div className="p-4 rounded-xl text-xs text-muted-text leading-relaxed mt-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  YTM figures are indicative as of the research date. Actual secondary-market YTM may vary. This is not an offer to buy or sell securities.
                 </div>
               </div>
             )}
 
-            {/* ─ SECTOR OUTLOOK ─ */}
+            {/* ── SECTOR OUTLOOK ── */}
             {section === 'sector' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">Sector Outlook</h2>
                 <div className="space-y-5">
                   <div className="glass-card p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-semibold text-primary-text">NBFC Sector — Operating Outlook</h3>
-                      <GradeBadge grade="Moderate" />
-                    </div>
-                    <p className="text-sm text-primary-text font-serif leading-relaxed">{sectorOutlook.operating}</p>
+                    <div className="flex items-center gap-2 mb-3"><h3 className="font-semibold text-primary-text">NBFC Sector — Operating Outlook</h3><GradeBadge grade="Moderate" /></div>
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{report.sectorOutlook.operating}</p>
                   </div>
                   <div className="glass-card p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-semibold text-primary-text">Digital Unsecured PL Sub-sector</h3>
-                      <GradeBadge grade="Moderate" />
-                    </div>
-                    <p className="text-sm text-primary-text font-serif leading-relaxed">{sectorOutlook.subSector}</p>
+                    <div className="flex items-center gap-2 mb-3"><h3 className="font-semibold text-primary-text">{subSectorLabel} Sub-sector</h3><GradeBadge grade="Moderate" /></div>
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{report.sectorOutlook.subSector}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ─ SUMMARY TABLE ─ */}
+            {/* ── SUMMARY TABLE ── */}
             {section === 'summary' && (
               <div>
                 <h2 className="text-base font-semibold text-primary-text mb-5">Summary Table</h2>
@@ -732,8 +844,7 @@ export const CompanyPage: React.FC = () => {
                     <tbody>
                       {[
                         { label: 'Company', value: company.name },
-                        { label: 'Sector', value: company.sector },
-                        { label: 'Sub-Sector', value: company.subSector },
+                        { label: 'Sector / Sub-sector', value: `${company.sector} · ${company.subSector}` },
                         { label: 'Established', value: company.established },
                         { label: 'Headquarters', value: company.hq },
                         { label: 'External Rating', value: `${company.externalRating} (${company.ratingAgency}, ${company.ratingDate})` },
@@ -741,24 +852,15 @@ export const CompanyPage: React.FC = () => {
                         { label: 'Health Score', value: `${company.healthScore}/100` },
                         { label: 'Internal Rating', value: `${company.internalRating}/15` },
                         { label: 'Combined Score', value: company.combinedScore },
-                        { label: 'GNPA (4Q26)', value: '1.53%' },
-                        { label: 'NNPA (4Q26)', value: '0.14%' },
-                        { label: 'Total CAR (3Q26)', value: '23.55%' },
-                        { label: 'ROAA (3Q26)', value: '6.38%' },
-                        { label: 'ROAE (3Q26)', value: '20.88%' },
-                        { label: 'NIM (3Q26)', value: '19.34%' },
-                        { label: 'Leverage (3Q26)', value: '2.40x' },
-                        { label: 'AUM (4Q26)', value: '₹9,861 Cr' },
-                        { label: 'Valuation (Apr 2026)', value: '~$1.5B (post Series E)' },
+                        { label: 'GNPA (latest)', value: latest(report.financials.assetQuality, 'GNPA') },
+                        { label: 'NNPA (latest)', value: latest(report.financials.assetQuality, 'NNPA') },
+                        { label: 'Total CAR (latest)', value: latest(report.financials.capitalization, 'Total CAR') },
+                        { label: 'Leverage (latest)', value: latest(report.financials.capitalization, 'Leverage') },
+                        { label: 'On-book AUM (latest)', value: `₹${latest(report.financials.assetQuality, 'On-book AUM')} Cr` },
+                        { label: 'Current NCD YTM', value: `${report.yieldOverview.currentYtm.toFixed(2)}%` },
                       ].map((row, i) => (
-                        <tr
-                          key={row.label}
-                          style={{
-                            borderBottom: '1px solid rgba(255,255,255,0.05)',
-                            background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
-                          }}
-                        >
-                          <td className="px-5 py-3 text-xs font-medium text-muted-text w-48">{row.label}</td>
+                        <tr key={row.label} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                          <td className="px-5 py-3 text-xs font-medium text-muted-text w-52">{row.label}</td>
                           <td className="px-5 py-3 text-sm font-medium text-primary-text">{row.value}</td>
                         </tr>
                       ))}
@@ -768,61 +870,33 @@ export const CompanyPage: React.FC = () => {
               </div>
             )}
 
-            {/* ─ AI Q&A ─ */}
+            {/* ── ASK AI ── */}
             {section === 'ai' && (
               <div>
                 <div className="flex items-center gap-2 mb-5">
                   <h2 className="text-base font-semibold text-primary-text">Ask AI</h2>
-                  <span
-                    className="text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wide"
-                    style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}
-                  >
-                    Beta
-                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wide" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>Beta</span>
                 </div>
-                <p className="text-sm text-muted-text mb-5">
-                  Ask questions about KrazyBee's financials, business model, ratings, or risk factors. Powered by our research data.
-                </p>
-
-                {/* Pre-baked questions */}
+                <p className="text-sm text-muted-text mb-5">Ask questions about {firstName}'s financials, business model, ratings, or risk factors. Grounded in our research data.</p>
                 <div className="flex flex-wrap gap-2 mb-5">
-                  {aiQAPairs.map(qa => (
-                    <button
-                      key={qa.q}
-                      onClick={() => { setAiQuery(qa.q); handleAiQuery(qa.q); }}
+                  {report.aiQAPairs.map(qa => (
+                    <button key={qa.q} onClick={() => { setAiQuery(qa.q); handleAiQuery(qa.q); }}
                       className="text-xs px-3 py-2 rounded-full text-muted-text transition-colors"
                       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)'; e.currentTarget.style.color = '#2DD4BF'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#9CB3B1'; }}
-                    >
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#9CB3B1'; }}>
                       {qa.q}
                     </button>
                   ))}
                 </div>
-
-                {/* Input */}
                 <div className="flex gap-2 mb-5">
-                  <input
-                    type="text"
-                    value={aiQuery}
-                    onChange={e => setAiQuery(e.target.value)}
+                  <input type="text" value={aiQuery} onChange={e => setAiQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && aiQuery.trim() && handleAiQuery(aiQuery)}
-                    placeholder="Ask a question about KrazyBee…"
+                    placeholder={`Ask a question about ${firstName}…`}
                     className="flex-1 px-4 py-3 rounded-lg text-sm focus:outline-none text-primary-text"
-                    style={{
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                    }}
-                  />
-                  <button
-                    onClick={() => aiQuery.trim() && handleAiQuery(aiQuery)}
-                    className="px-4 py-3 rounded-lg btn-gradient"
-                  >
-                    <Send size={16} />
-                  </button>
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  <button onClick={() => aiQuery.trim() && handleAiQuery(aiQuery)} className="px-4 py-3 rounded-lg btn-gradient"><Send size={16} /></button>
                 </div>
-
-                {/* Answer */}
                 {aiLoading && (
                   <div className="glass-card p-5 flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#2DD4BF' }} />
@@ -830,21 +904,10 @@ export const CompanyPage: React.FC = () => {
                   </div>
                 )}
                 {aiAnswer && !aiLoading && (
-                  <div
-                    className="glass-card p-5 page-fade"
-                    style={{ borderColor: 'rgba(45,212,191,0.2)' }}
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <MessageSquare size={15} style={{ color: '#2DD4BF' }} />
-                      <p className="text-xs font-semibold text-brand-teal uppercase tracking-wide">Answer</p>
-                    </div>
+                  <div className="glass-card p-5 page-fade" style={{ borderColor: 'rgba(45,212,191,0.2)' }}>
+                    <div className="flex items-center gap-2 mb-3"><MessageSquare size={15} style={{ color: '#2DD4BF' }} /><p className="text-xs font-semibold text-brand-teal uppercase tracking-wide">Answer</p></div>
                     <p className="text-sm text-primary-text font-serif leading-relaxed">{aiAnswer}</p>
-                    <p
-                      className="text-[11px] text-muted-text mt-4 pt-3"
-                      style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
-                    >
-                      This response is based on the research report data. Not personalised investment advice.
-                    </p>
+                    <p className="text-[11px] text-muted-text mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>This response is based on the research report data. Not personalised investment advice.</p>
                   </div>
                 )}
                 {!aiLoading && !aiAnswer && (
