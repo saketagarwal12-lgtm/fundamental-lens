@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { GitBranch, BookOpen, BarChart2, Settings, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { useAuth } from '../contexts/AuthContext';
+import { useUI } from '../contexts/UIContext';
 
 const navItems = [
   { to: '/creator/pipeline', icon: GitBranch, label: 'Pipeline' },
@@ -16,12 +17,7 @@ export const CreatorLayout: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    const saved = sessionStorage.getItem('fl-sidebar-collapsed');
-    if (saved !== null) return saved === '1';
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
-  });
-  const toggleCollapsed = () => setCollapsed(v => { sessionStorage.setItem('fl-sidebar-collapsed', v ? '0' : '1'); return !v; });
+  const { sidebarCollapsed: collapsed, toggleSidebar: toggleCollapsed } = useUI();
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
@@ -99,8 +95,18 @@ export const CreatorLayout: React.FC = () => {
           className="h-14 flex items-center gap-4 px-4 shrink-0 z-10"
           style={{ background: 'rgba(11,31,32,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
-          <button className="lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(true)}>
+          <button className="lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <Menu size={20} />
+          </button>
+          <button
+            className="hidden lg:flex items-center justify-center w-8 h-8 rounded-md text-muted-text hover:text-primary-text transition-colors shrink-0"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            {collapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
           </button>
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-sm font-medium text-primary-text">Research Creator Workspace</span>

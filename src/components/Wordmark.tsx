@@ -19,7 +19,7 @@ export const Wordmark: React.FC<Props> = ({ size = 'md' }) => {
     58;
   const gap = size === '2xl' ? 'gap-3' : 'gap-2';
   return (
-    <span className={`inline-flex items-center ${gap} font-extrabold tracking-[-0.02em] select-none ${textSize}`}>
+    <span className={`inline-flex items-center ${gap} font-bold tracking-[-0.02em] select-none ${textSize}`}>
       <Aperture
         size={iconSize}
         className="text-brand-teal shrink-0"

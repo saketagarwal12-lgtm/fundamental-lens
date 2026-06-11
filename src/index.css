@@ -56,7 +56,7 @@
     background: linear-gradient(135deg, #2DD4BF 0%, #22D3EE 100%);
     box-shadow: 0 6px 20px rgba(45,212,191,0.4);
     color: #0B1F20;
-    font-weight: 600;
+    font-weight: 500;
     transition: all 0.2s ease-out;
   }
   .btn-gradient:hover {

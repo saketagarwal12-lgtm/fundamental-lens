@@ -93,9 +93,6 @@ export const Landing: React.FC = () => {
       <section className="max-w-6xl mx-auto px-6 pt-10 pb-14 lg:pt-12 lg:pb-20 relative">
         <div className="grid lg:grid-cols-2 gap-10 items-start">
           <div className="page-fade">
-            <div className="mb-5">
-              <Wordmark size="2xl" />
-            </div>
             <div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4"
               style={{ background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.25)', color: '#2DD4BF' }}
@@ -103,10 +100,10 @@ export const Landing: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#2DD4BF' }}></span>
               Now covering 5 NBFC issuers · More launching soon
             </div>
-            <h1 className="font-serif text-4xl lg:text-5xl font-medium text-primary-text leading-tight mb-4 text-glow-teal">
+            <h1 className="font-serif text-3xl lg:text-[2.6rem] font-semibold text-primary-text leading-[1.15] mb-4 text-glow-teal">
               {BRAND.tagline}
             </h1>
-            <p className="text-lg text-muted-text leading-relaxed mb-5">
+            <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed mb-5">
               Access institutional-grade fundamental research, a real-time financial health score, financial &amp; non-financial database, and an interactive AI bot with a single click.
             </p>
 
@@ -208,7 +205,7 @@ export const Landing: React.FC = () => {
       <section id="features" className="py-20" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl font-medium text-primary-text mb-3">Everything you need to evaluate fixed-income credit</h2>
+            <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">Everything you need to evaluate fixed-income credit</h2>
             <p className="text-muted-text max-w-xl mx-auto">No Bloomberg terminal needed. No financial modelling degree required. Just clear, honest fundamental research.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -229,7 +226,7 @@ export const Landing: React.FC = () => {
       <section id="how-it-works" className="py-20">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl font-medium text-primary-text mb-3">How it works</h2>
+            <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">How it works</h2>
             <p className="text-muted-text">From search to informed decision in under five minutes.</p>
           </div>
           <div className="space-y-5">
