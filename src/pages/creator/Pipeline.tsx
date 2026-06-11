@@ -1,16 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, Circle, AlertCircle, Clock, ChevronRight, X, Plus } from 'lucide-react';
 
-const STAGES = [
-  'Documents',
-  'Capture',
-  'Model',
-  'Gaps',
-  'Score',
-  'Report',
-  'Review',
-  'Publish',
-];
+const STAGES = ['Documents', 'Capture', 'Model', 'Gaps', 'Score', 'Report', 'Review', 'Publish'];
 
 type StageStatus = 'done' | 'active' | 'blocked' | 'pending';
 
@@ -82,122 +73,175 @@ const gaps = [
 ];
 
 const StageIcon: React.FC<{ status: StageStatus }> = ({ status }) => {
-  if (status === 'done') return <CheckCircle2 size={14} className="text-[#2F8A5F]" />;
-  if (status === 'active') return <div className="w-3.5 h-3.5 rounded-full border-2 border-brand bg-brand/20" />;
-  if (status === 'blocked') return <AlertCircle size={14} className="text-[#B5524A]" />;
-  return <Circle size={14} className="text-hairline" />;
+  if (status === 'done') return <CheckCircle2 size={14} style={{ color: '#34D399' }} />;
+  if (status === 'active') return (
+    <div className="w-3.5 h-3.5 rounded-full border-2" style={{ borderColor: '#2DD4BF', background: 'rgba(45,212,191,0.2)' }} />
+  );
+  if (status === 'blocked') return <AlertCircle size={14} style={{ color: '#FB7185' }} />;
+  return <Circle size={14} style={{ color: 'rgba(255,255,255,0.15)' }} />;
 };
+
+const gapStatusStyle = (s: string): React.CSSProperties =>
+  s === 'obtained' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
+  s === 'partial' ? { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' } :
+  { background: 'rgba(251,113,133,0.15)', color: '#FB7185' };
+
+const gapDotColor = (s: string) =>
+  s === 'obtained' ? '#34D399' : s === 'partial' ? '#FBBF24' : '#FB7185';
 
 export const Pipeline: React.FC = () => {
   const [selected, setSelected] = useState<string | null>('saral');
-  const selectedIssuer = pipelineData.find(p => p.id === selected);
-  const blockedIssuer = pipelineData.find(p => p.id === 'saral');
 
   return (
     <div className="p-6 page-fade max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-7">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Research Pipeline</h1>
-          <p className="text-sm text-muted mt-0.5">{pipelineData.length} issuers in progress</p>
+          <h1 className="text-xl font-semibold text-primary-text">Research Pipeline</h1>
+          <p className="text-sm text-muted-text mt-0.5">{pipelineData.length} issuers in progress</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand-deep transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 rounded-lg btn-gradient text-sm">
           <Plus size={15} /> New Issuer
         </button>
       </div>
 
       {/* Stage header */}
-      <div className="bg-white rounded-t-xl border border-b-0 border-hairline px-5 py-3 overflow-x-auto">
+      <div
+        className="rounded-t-xl px-5 py-3 overflow-x-auto"
+        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderBottom: 'none' }}
+      >
         <div className="flex items-center gap-1 min-w-max">
-          <div className="w-56 shrink-0 text-xs font-medium text-muted">Issuer</div>
-          {STAGES.map((s, i) => (
+          <div className="w-56 shrink-0 text-xs font-medium text-muted-text">Issuer</div>
+          {STAGES.map(s => (
             <div key={s} className="w-20 shrink-0 text-center">
-              <span className="text-[10px] text-muted font-medium">{s}</span>
+              <span className="text-[10px] text-muted-text font-medium">{s}</span>
             </div>
           ))}
-          <div className="w-24 shrink-0 text-xs font-medium text-muted pl-2">Analyst</div>
+          <div className="w-24 shrink-0 text-xs font-medium text-muted-text pl-2">Analyst</div>
         </div>
       </div>
 
       {/* Pipeline rows */}
-      <div className="bg-white rounded-b-xl border border-hairline overflow-hidden mb-6">
-        {pipelineData.map((issuer, idx) => (
+      <div
+        className="rounded-b-xl overflow-hidden mb-6"
+        style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(18,42,44,0.4)' }}
+      >
+        {pipelineData.map(issuer => (
           <div key={issuer.id}>
             <button
               onClick={() => setSelected(selected === issuer.id ? null : issuer.id)}
-              className={`w-full flex items-center gap-1 px-5 py-4 border-b border-hairline hover:bg-paper/50 transition-colors text-left overflow-x-auto ${selected === issuer.id ? 'bg-brand-tint/30' : ''}`}
+              className="w-full flex items-center gap-1 px-5 py-4 text-left overflow-x-auto transition-colors"
+              style={{
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                background: selected === issuer.id ? 'rgba(45,212,191,0.06)' : 'transparent',
+              }}
+              onMouseEnter={e => { if (selected !== issuer.id) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              onMouseLeave={e => { if (selected !== issuer.id) e.currentTarget.style.background = 'transparent'; }}
             >
               <div className="w-56 shrink-0 min-w-0 pr-2">
-                <p className="text-sm font-medium text-[#23262C] truncate">{issuer.name}</p>
-                <p className="text-xs text-muted mt-0.5">{issuer.sector}</p>
+                <p className="text-sm font-medium text-primary-text truncate">{issuer.name}</p>
+                <p className="text-xs text-muted-text mt-0.5">{issuer.sector}</p>
               </div>
               {issuer.stageStatuses.map((status, si) => (
                 <div key={si} className="w-20 shrink-0 flex justify-center">
                   <div className="relative flex items-center">
                     <StageIcon status={status} />
                     {si < STAGES.length - 1 && (
-                      <div className={`absolute left-full w-16 h-px ${status === 'done' ? 'bg-[#2F8A5F]/30' : 'bg-hairline'}`} />
+                      <div
+                        className="absolute left-full w-16 h-px"
+                        style={{ background: status === 'done' ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.07)' }}
+                      />
                     )}
                   </div>
                 </div>
               ))}
               <div className="w-24 shrink-0 pl-2 flex items-center gap-2">
-                <span className="text-xs text-muted">{issuer.analyst}</span>
-                <ChevronRight size={13} className="text-muted ml-auto" />
+                <span className="text-xs text-muted-text">{issuer.analyst}</span>
+                <ChevronRight size={13} className="text-muted-text ml-auto" />
               </div>
             </button>
 
             {/* Expanded gap panel for blocked issuer */}
             {selected === issuer.id && issuer.blockedReason && (
-              <div className="border-b border-hairline bg-[#B5524A]/5 px-5 py-4">
+              <div
+                className="border-b px-5 py-4"
+                style={{ borderColor: 'rgba(251,113,133,0.15)', background: 'rgba(251,113,133,0.05)' }}
+              >
                 <div className="flex items-start gap-3 mb-4">
-                  <AlertCircle size={16} className="text-[#B5524A] mt-0.5 shrink-0" />
+                  <AlertCircle size={16} style={{ color: '#FB7185' }} className="mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-[#B5524A]">Blocked at Gaps stage</p>
-                    <p className="text-xs text-muted mt-0.5">{issuer.blockedReason}</p>
+                    <p className="text-sm font-semibold" style={{ color: '#FB7185' }}>Blocked at Gaps stage</p>
+                    <p className="text-xs text-muted-text mt-0.5">{issuer.blockedReason}</p>
                   </div>
-                  <button onClick={() => setSelected(null)} className="ml-auto text-muted hover:text-[#23262C]">
+                  <button onClick={() => setSelected(null)} className="ml-auto text-muted-text hover:text-primary-text">
                     <X size={15} />
                   </button>
                 </div>
 
-                <h4 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Data Gaps</h4>
+                <h4 className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-3">Data Gaps</h4>
                 <div className="space-y-2">
                   {gaps.map(g => (
-                    <div key={g.id} className="flex items-start gap-3 bg-white rounded-lg border border-hairline p-3">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${g.status === 'obtained' ? 'bg-[#2F8A5F]' : g.status === 'partial' ? 'bg-[#C08A2E]' : 'bg-[#B5524A]'}`} />
+                    <div
+                      key={g.id}
+                      className="flex items-start gap-3 rounded-lg p-3"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                        style={{ background: gapDotColor(g.status) }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-[#23262C]">{g.field}</p>
-                        <p className="text-xs text-muted">Source: {g.source}</p>
-                        {g.notes && <p className="text-xs text-muted mt-0.5 italic">{g.notes}</p>}
+                        <p className="text-xs font-medium text-primary-text">{g.field}</p>
+                        <p className="text-xs text-muted-text">Source: {g.source}</p>
+                        {g.notes && <p className="text-xs text-muted-text mt-0.5 italic">{g.notes}</p>}
                       </div>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 ${
-                        g.status === 'obtained' ? 'bg-[#2F8A5F]/10 text-[#2F8A5F]' :
-                        g.status === 'partial' ? 'bg-[#C08A2E]/10 text-[#C08A2E]' :
-                        'bg-[#B5524A]/10 text-[#B5524A]'
-                      }`}>
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded shrink-0"
+                        style={gapStatusStyle(g.status)}
+                      >
                         {g.status}
                       </span>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button className="px-4 py-2 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-deep transition-colors">Mark gaps resolved</button>
-                  <button className="px-4 py-2 rounded-lg border border-hairline text-xs font-medium hover:bg-paper transition-colors">Add note</button>
+                  <button className="px-4 py-2 rounded-lg btn-gradient text-xs font-medium">Mark gaps resolved</button>
+                  <button
+                    className="px-4 py-2 rounded-lg text-xs font-medium text-muted-text transition-colors"
+                    style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                  >
+                    Add note
+                  </button>
                 </div>
               </div>
             )}
 
             {selected === issuer.id && !issuer.blockedReason && (
-              <div className="border-b border-hairline bg-paper/50 px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3 text-xs text-muted">
+              <div
+                className="border-b px-5 py-3 flex items-center justify-between"
+                style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}
+              >
+                <div className="flex items-center gap-3 text-xs text-muted-text">
                   <Clock size={13} />
                   <span>Last updated {issuer.lastUpdated}</span>
                   <span>·</span>
-                  <span>Stage {issuer.currentStage + 1} of {STAGES.length}: <strong className="text-[#23262C]">{STAGES[issuer.currentStage]}</strong></span>
+                  <span>
+                    Stage {issuer.currentStage + 1} of {STAGES.length}:{' '}
+                    <strong className="text-primary-text">{STAGES[issuer.currentStage]}</strong>
+                  </span>
                 </div>
                 <div className="flex gap-2">
-                  <button className="px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-deep transition-colors">Continue →</button>
-                  <button onClick={() => setSelected(null)} className="px-3 py-1.5 rounded-lg border border-hairline text-xs font-medium hover:bg-white transition-colors">Collapse</button>
+                  <button className="px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium">Continue →</button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-text transition-colors"
+                    style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    Collapse
+                  </button>
                 </div>
               </div>
             )}
@@ -206,11 +250,14 @@ export const Pipeline: React.FC = () => {
       </div>
 
       {/* Stage legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-muted">
-        <span className="flex items-center gap-1.5"><CheckCircle2 size={13} className="text-[#2F8A5F]" /> Completed</span>
-        <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full border-2 border-brand bg-brand/20" /> In progress</span>
-        <span className="flex items-center gap-1.5"><AlertCircle size={13} className="text-[#B5524A]" /> Blocked</span>
-        <span className="flex items-center gap-1.5"><Circle size={13} className="text-hairline" /> Not started</span>
+      <div className="flex flex-wrap gap-4 text-xs text-muted-text">
+        <span className="flex items-center gap-1.5"><CheckCircle2 size={13} style={{ color: '#34D399' }} /> Completed</span>
+        <span className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full border-2" style={{ borderColor: '#2DD4BF', background: 'rgba(45,212,191,0.2)' }} />
+          In progress
+        </span>
+        <span className="flex items-center gap-1.5"><AlertCircle size={13} style={{ color: '#FB7185' }} /> Blocked</span>
+        <span className="flex items-center gap-1.5"><Circle size={13} style={{ color: 'rgba(255,255,255,0.2)' }} /> Not started</span>
       </div>
     </div>
   );

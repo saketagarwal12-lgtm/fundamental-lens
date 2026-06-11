@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight } from 'lucide-react';
+import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, BookOpen, Activity, Bot } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { ScoreRing } from '../components/ScoreRing';
 import { GradeBadge } from '../components/GradeBadge';
@@ -44,6 +44,13 @@ const steps = [
   { n: '03', title: 'Monitor in your portfolio', body: 'Add to your watchlist. Get alerted when the Health Score moves or material news breaks.' },
 ];
 
+const valueChips = [
+  { icon: BookOpen, label: 'Fundamental research' },
+  { icon: Activity, label: 'Real-time health score' },
+  { icon: BarChart2, label: 'Financial & non-financial data' },
+  { icon: Bot, label: 'Interactive AI bot' },
+];
+
 export const Landing: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -57,17 +64,24 @@ export const Landing: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen">
+      {/* Radial glows */}
+      <div className="radial-glow-tl" />
+      <div className="radial-glow-br" />
+
       {/* Nav */}
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-hairline">
+      <nav
+        className="sticky top-0 z-40"
+        style={{ background: 'rgba(11,31,32,0.85)', backdropFilter: 'blur(18px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+      >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Wordmark size="lg" />
           <div className="flex items-center gap-3">
-            <a href="#features" className="hidden sm:inline text-sm font-medium text-muted hover:text-[#23262C] transition-colors">Features</a>
-            <a href="#how-it-works" className="hidden sm:inline text-sm font-medium text-muted hover:text-[#23262C] transition-colors">How it works</a>
+            <a href="#features" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">Features</a>
+            <a href="#how-it-works" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">How it works</a>
             <button
               onClick={() => setShowModal(true)}
-              className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand-deep transition-colors"
+              className="px-4 py-2 rounded-lg btn-gradient text-sm"
             >
               Sign in
             </button>
@@ -76,29 +90,50 @@ export const Landing: React.FC = () => {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-28 lg:pb-24">
+      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-28 lg:pb-24 relative">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="page-fade">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand/10 text-brand text-xs font-semibold mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand inline-block"></span>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6"
+              style={{ background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.25)', color: '#2DD4BF' }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#2DD4BF' }}></span>
               Now covering 5 NBFC issuers · More launching soon
             </div>
-            <h1 className="font-serif text-4xl lg:text-5xl font-medium text-ink leading-tight mb-5">
+            <h1 className="font-serif text-4xl lg:text-5xl font-medium text-primary-text leading-tight mb-5 text-glow-teal">
               {BRAND.tagline}
             </h1>
-            <p className="text-lg text-muted leading-relaxed mb-8">
-              {BRAND.subtagline} Credit scorecards, health scores, financial deep-dives, and real-time alerts — built for the individual fixed-income investor.
+            <p className="text-lg text-muted-text leading-relaxed mb-6">
+              Access institutional-grade fundamental research, a real-time financial health score, financial &amp; non-financial data, and an interactive AI bot.
             </p>
+
+            {/* Value chips */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {valueChips.map(chip => (
+                <div
+                  key={chip.label}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium"
+                  style={{ background: 'rgba(18,42,44,0.55)', border: '1px solid rgba(255,255,255,0.08)', color: '#E9F3F1', backdropFilter: 'blur(12px)' }}
+                >
+                  <chip.icon size={14} style={{ color: '#2DD4BF' }} />
+                  {chip.label}
+                </div>
+              ))}
+            </div>
+
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg bg-brand text-white font-semibold hover:bg-brand-deep transition-colors"
+                className="flex items-center gap-2 px-6 py-3 rounded-lg btn-gradient text-sm"
               >
                 Explore research <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                className="flex items-center gap-2 px-6 py-3 rounded-lg border border-hairline text-[#23262C] font-semibold hover:bg-white transition-colors"
+                className="flex items-center gap-2 px-6 py-3 rounded-lg text-primary-text font-semibold text-sm transition-colors"
+                style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
               >
                 See how it works
               </button>
@@ -106,53 +141,59 @@ export const Landing: React.FC = () => {
           </div>
 
           {/* Hero preview card */}
-          <div className="bg-white rounded-2xl border border-hairline shadow-xl p-6 page-fade">
+          <div className="glass-card-elevated p-6 page-fade animate-float">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <p className="text-xs text-muted uppercase tracking-wider mb-1">Live Preview</p>
-                <h3 className="font-semibold text-[#23262C] text-[15px]">KrazyBee Services Limited</h3>
-                <p className="text-xs text-muted mt-0.5">NBFC · Unsecured Personal Loans · A (Stable)</p>
+                <p className="text-xs text-muted-text uppercase tracking-wider mb-1">Live Preview</p>
+                <h3 className="font-semibold text-primary-text text-[15px]">KrazyBee Services Limited</h3>
+                <p className="text-xs text-muted-text mt-0.5">NBFC · Unsecured Personal Loans · A (Stable)</p>
               </div>
               <div className="flex items-center gap-3">
                 <ScoreRing score={65} size={72} strokeWidth={6} />
-                <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-[#2F8A5F]/10 text-[#2F8A5F]">Subscribe</span>
+                <span
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold"
+                  style={{ background: 'rgba(52,211,153,0.15)', color: '#34D399' }}
+                >Subscribe</span>
               </div>
             </div>
             <div className="space-y-2.5">
               {previewPillars.map(p => (
                 <div key={p.name} className="flex items-center gap-3">
-                  <span className="text-xs text-muted w-36 shrink-0 truncate">{p.name}</span>
-                  <div className="flex-1 h-1.5 bg-hairline rounded-full overflow-hidden">
+                  <span className="text-xs text-muted-text w-36 shrink-0 truncate">{p.name}</span>
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
                         width: `${p.pct}%`,
-                        backgroundColor: p.grade === 'Strong' ? '#2F8A5F' : p.grade === 'Moderate' ? '#C08A2E' : '#B5524A',
+                        backgroundColor: p.grade === 'Strong' ? '#2DD4BF' : p.grade === 'Moderate' ? '#FBBF24' : '#FB7185',
                       }}
                     />
                   </div>
                   <GradeBadge grade={p.grade} compact />
-                  <span className="text-xs font-mono-nums text-muted w-8 text-right">{p.pct}%</span>
+                  <span className="text-xs font-mono-nums text-muted-text w-8 text-right">{p.pct}%</span>
                 </div>
               ))}
             </div>
-            <div className="mt-5 pt-4 border-t border-hairline grid grid-cols-3 gap-3 text-center">
+            <div className="mt-5 pt-4 grid grid-cols-3 gap-3 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
               <div>
-                <p className="font-mono-nums text-sm font-semibold text-[#23262C]">1.53%</p>
-                <p className="text-[10px] text-muted mt-0.5">GNPA (4Q26)</p>
+                <p className="font-mono-nums text-sm font-semibold text-primary-text">1.53%</p>
+                <p className="text-[10px] text-muted-text mt-0.5">GNPA (4Q26)</p>
               </div>
               <div>
-                <p className="font-mono-nums text-sm font-semibold text-[#23262C]">23.55%</p>
-                <p className="text-[10px] text-muted mt-0.5">Total CAR</p>
+                <p className="font-mono-nums text-sm font-semibold text-primary-text">23.55%</p>
+                <p className="text-[10px] text-muted-text mt-0.5">Total CAR</p>
               </div>
               <div>
-                <p className="font-mono-nums text-sm font-semibold text-[#23262C]">10.27%</p>
-                <p className="text-[10px] text-muted mt-0.5">NCD YTM</p>
+                <p className="font-mono-nums text-sm font-semibold text-primary-text">10.27%</p>
+                <p className="text-[10px] text-muted-text mt-0.5">NCD YTM</p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="mt-4 w-full py-2.5 rounded-lg bg-brand/5 border border-brand/20 text-brand text-sm font-semibold hover:bg-brand/10 transition-colors flex items-center justify-center gap-1.5"
+              className="mt-4 w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.2)', color: '#2DD4BF' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.15)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
             >
               Read full report <ChevronRight size={14} />
             </button>
@@ -161,20 +202,20 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* Features */}
-      <section id="features" className="bg-white border-y border-hairline py-20">
+      <section id="features" className="py-20" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl font-medium text-ink mb-3">Everything you need to evaluate fixed-income credit</h2>
-            <p className="text-muted max-w-xl mx-auto">No Bloomberg terminal needed. No financial modelling degree required. Just clear, honest research.</p>
+            <h2 className="font-serif text-3xl font-medium text-primary-text mb-3">Everything you need to evaluate fixed-income credit</h2>
+            <p className="text-muted-text max-w-xl mx-auto">No Bloomberg terminal needed. No financial modelling degree required. Just clear, honest fundamental research.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map(f => (
-              <div key={f.title} className="p-6 rounded-xl bg-paper border border-hairline hover:border-brand/30 hover:bg-brand-tint transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-brand/10 text-brand flex items-center justify-center mb-4">
+              <div key={f.title} className="glass-card p-6 transition-all duration-200">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
                   <f.icon size={20} />
                 </div>
-                <h3 className="font-semibold text-[#23262C] mb-2">{f.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{f.body}</p>
+                <h3 className="font-semibold text-primary-text mb-2">{f.title}</h3>
+                <p className="text-sm text-muted-text leading-relaxed">{f.body}</p>
               </div>
             ))}
           </div>
@@ -185,21 +226,24 @@ export const Landing: React.FC = () => {
       <section id="how-it-works" className="py-20">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="font-serif text-3xl font-medium text-ink mb-3">How it works</h2>
-            <p className="text-muted">From search to informed decision in under five minutes.</p>
+            <h2 className="font-serif text-3xl font-medium text-primary-text mb-3">How it works</h2>
+            <p className="text-muted-text">From search to informed decision in under five minutes.</p>
           </div>
           <div className="space-y-8">
             {steps.map((s, i) => (
               <div key={s.n} className="flex gap-6 items-start">
-                <div className="w-12 h-12 shrink-0 rounded-xl bg-brand text-white flex items-center justify-center font-mono-nums font-bold text-sm">
+                <div
+                  className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-mono-nums font-bold text-sm"
+                  style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #22D3EE 100%)', color: '#0B1F20', boxShadow: '0 6px 20px rgba(45,212,191,0.4)' }}
+                >
                   {s.n}
                 </div>
                 <div className="flex-1 pt-2">
-                  <h3 className="font-semibold text-[#23262C] mb-1">{s.title}</h3>
-                  <p className="text-sm text-muted">{s.body}</p>
+                  <h3 className="font-semibold text-primary-text mb-1">{s.title}</h3>
+                  <p className="text-sm text-muted-text">{s.body}</p>
                 </div>
                 {i < steps.length - 1 && (
-                  <div className="absolute ml-6 mt-12 w-px h-8 bg-hairline hidden sm:block" />
+                  <div className="absolute ml-6 mt-12 w-px h-8 hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }} />
                 )}
               </div>
             ))}
@@ -208,85 +252,101 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* Trust strip */}
-      <section className="bg-ink py-14">
+      <section style={{ background: 'rgba(18,42,44,0.5)', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="py-14">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="font-serif text-2xl text-white/90 mb-3">
-            "The most important thing individual investors lack is access to institutional-grade credit research."
+          <p className="font-serif text-2xl text-primary-text/90 mb-3">
+            "The most important thing individual investors lack is access to institutional-grade fundamental research."
           </p>
-          <p className="text-white/40 text-sm">— The founding premise of Fundamental Lens</p>
+          <p className="text-muted-text text-sm">— The founding premise of Fundamental Lens</p>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-8 px-8 py-3.5 rounded-lg bg-brand text-white font-semibold hover:bg-brand-deep transition-colors inline-flex items-center gap-2"
+            className="mt-8 px-8 py-3.5 rounded-lg btn-gradient text-sm inline-flex items-center gap-2"
           >
             Get started — it's free <ArrowRight size={16} />
           </button>
         </div>
       </section>
 
+      {/* Disclaimer band */}
+      <div className="py-5 px-6" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(10,25,27,0.5)' }}>
+        <div className="max-w-6xl mx-auto">
+          <p className="text-[11px] text-faint-text leading-relaxed text-center">
+            Fundamental Lens provides research and information for educational purposes only and does not constitute personalised investment advice or a recommendation to buy, sell or hold any security. Investments in securities are subject to market risk; past performance does not guarantee future results. Health scores and assessments are model-generated and reviewed before publishing, but may contain errors and should not be the sole basis for any investment decision. Read all offer documents carefully and consult a qualified adviser before investing. [Entity name, SEBI/regulatory registration number and grievance-redressal details to be inserted.]
+          </p>
+        </div>
+      </div>
+
       {/* Footer */}
-      <footer className="bg-white border-t border-hairline py-8">
+      <footer className="py-8" style={{ background: 'rgba(10,25,27,0.7)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Wordmark size="sm" />
-          <p className="text-xs text-muted text-center">
+          <p className="text-xs text-muted-text text-center">
             Research content is for informational purposes only. Not personalised investment advice.
             Please read all offer documents before investing.
           </p>
-          <p className="text-xs text-muted">© 2026 Fundamental Lens</p>
+          <p className="text-xs text-muted-text">© 2026 Fundamental Lens</p>
         </div>
       </footer>
 
       {/* Sign-in modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 page-fade">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative glass-card-elevated w-full max-w-md p-8 page-fade">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-muted hover:text-[#23262C] transition-colors"
+              className="absolute top-4 right-4 text-muted-text hover:text-primary-text transition-colors"
             >
               <X size={20} />
             </button>
             <div className="flex justify-center mb-6">
               <Wordmark size="lg" />
             </div>
-            <h2 className="text-xl font-semibold text-center text-ink mb-1">Welcome</h2>
-            <p className="text-sm text-muted text-center mb-6">Choose how you'd like to enter</p>
+            <h2 className="text-xl font-semibold text-center text-primary-text mb-1">Welcome</h2>
+            <p className="text-sm text-muted-text text-center mb-6">Choose how you'd like to enter</p>
 
             <div className="mb-5">
-              <label className="block text-xs font-medium text-muted mb-1.5">Your name (optional)</label>
+              <label className="block text-xs font-medium text-muted-text mb-1.5">Your name (optional)</label>
               <input
                 type="text"
                 placeholder="e.g. Priya Sharma"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="w-full px-3 py-2.5 border border-hairline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+                className="w-full px-3 py-2.5 rounded-lg text-sm focus:outline-none transition-colors text-primary-text"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
               />
             </div>
 
             <div className="space-y-3">
               <button
                 onClick={() => handleEnter('investor')}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border-2 border-brand bg-brand/5 hover:bg-brand/10 transition-colors group"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-xl transition-colors group"
+                style={{ border: '2px solid rgba(45,212,191,0.4)', background: 'rgba(45,212,191,0.08)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.15)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
               >
                 <div className="text-left">
-                  <p className="font-semibold text-brand">Enter as Investor</p>
-                  <p className="text-xs text-muted mt-0.5">Browse research, track portfolio, set alerts</p>
+                  <p className="font-semibold text-brand-teal">Enter as Investor</p>
+                  <p className="text-xs text-muted-text mt-0.5">Browse research, track portfolio, set alerts</p>
                 </div>
-                <ArrowRight size={18} className="text-brand group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={18} className="text-brand-teal group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={() => handleEnter('creator')}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border-2 border-hairline hover:border-[#C08A2E]/40 hover:bg-[#C08A2E]/5 transition-colors group"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-xl transition-colors group"
+                style={{ border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
               >
                 <div className="text-left">
-                  <p className="font-semibold text-[#23262C]">Enter as Research Creator</p>
-                  <p className="text-xs text-muted mt-0.5">Manage pipeline, publish reports, configure models</p>
+                  <p className="font-semibold text-primary-text">Enter as Research Creator</p>
+                  <p className="text-xs text-muted-text mt-0.5">Manage pipeline, publish reports, configure models</p>
                 </div>
-                <ArrowRight size={18} className="text-muted group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={18} className="text-muted-text group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 
-            <p className="text-[11px] text-muted text-center mt-5 leading-relaxed">
+            <p className="text-[11px] text-muted-text text-center mt-5 leading-relaxed">
               This is a prototype. No real account required. Research is for informational purposes only.
             </p>
           </div>

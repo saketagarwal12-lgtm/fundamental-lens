@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronDown, ChevronRight, Download, Bell, Star, ArrowLeft,
-  TrendingUp, TrendingDown, MessageSquare, Send,
+  TrendingUp, MessageSquare, Send, BookOpen,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell,
+  ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart,
 } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
 import { GradeBadge, gradeBarColor } from '../../../components/GradeBadge';
@@ -30,7 +30,7 @@ type Section =
   | 'summary'
   | 'ai';
 
-const COLORS = ['#0F6E64', '#2F8A5F', '#C08A2E', '#1B6E4B', '#B5524A', '#6A6E76', '#4A7FA5', '#8B6FC8', '#D4956A', '#5BA88B', '#A8B5C2', '#7D8B5E', '#C4A882'];
+const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1'];
 
 // ── Health Score Chart ──────────────────────────────────────────────────────
 
@@ -38,31 +38,40 @@ const CustomDot = (props: {
   cx?: number; cy?: number; payload?: { event?: { direction: 'up' | 'down' } };
 }) => {
   const { cx = 0, cy = 0, payload } = props;
-  if (!payload?.event) return <circle cx={cx} cy={cy} r={3} fill="#0F6E64" />;
-  const color = payload.event.direction === 'up' ? '#2F8A5F' : '#B5524A';
+  if (!payload?.event) return <circle cx={cx} cy={cy} r={3} fill="#2DD4BF" />;
+  const color = payload.event.direction === 'up' ? '#34D399' : '#FB7185';
   return (
     <g>
-      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.15} />
+      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.2} />
       <circle cx={cx} cy={cy} r={4} fill={color} />
     </g>
   );
 };
 
-const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { month: string; score: number; event?: { direction: string; reason: string } } }> }) => {
+const CustomTooltip = ({ active, payload }: {
+  active?: boolean;
+  payload?: Array<{ payload: { month: string; score: number; event?: { direction: string; reason: string } } }>;
+}) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-white border border-hairline rounded-xl shadow-lg p-4 max-w-xs">
-      <p className="font-medium text-[#23262C] text-sm">{d.month}</p>
-      <p className="font-mono-nums font-bold text-lg" style={{ color: d.score >= 70 ? '#2F8A5F' : d.score >= 55 ? '#C08A2E' : '#B5524A' }}>
+    <div
+      className="rounded-xl p-4 max-w-xs"
+      style={{ background: 'rgba(15,35,38,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}
+    >
+      <p className="font-medium text-primary-text text-sm">{d.month}</p>
+      <p
+        className="font-mono-nums font-bold text-lg"
+        style={{ color: d.score >= 70 ? '#34D399' : d.score >= 55 ? '#FBBF24' : '#FB7185' }}
+      >
         {d.score}/100
       </p>
       {d.event && (
-        <div className={`mt-2 pt-2 border-t border-hairline flex gap-2 items-start`}>
-          <span className={`text-lg ${d.event.direction === 'up' ? 'text-[#2F8A5F]' : 'text-[#B5524A]'}`}>
+        <div className="mt-2 pt-2 flex gap-2 items-start" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <span style={{ color: d.event.direction === 'up' ? '#34D399' : '#FB7185' }} className="text-lg">
             {d.event.direction === 'up' ? '↑' : '↓'}
           </span>
-          <p className="text-xs text-muted leading-relaxed">{d.event.reason}</p>
+          <p className="text-xs text-muted-text leading-relaxed">{d.event.reason}</p>
         </div>
       )}
     </div>
@@ -71,42 +80,78 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
 
 // ── Scorecard Pillar ──────────────────────────────────────────────────────────
 
-const PillarRow: React.FC<{ pillar: typeof scorecard[0]; onFactorClick: (name: string) => void; activeFactorName: string | null }> = ({ pillar, onFactorClick, activeFactorName }) => {
+const PillarRow: React.FC<{
+  pillar: typeof scorecard[0];
+  onFactorClick: (name: string) => void;
+  activeFactorName: string | null;
+}> = ({ pillar, onFactorClick, activeFactorName }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-hairline rounded-xl overflow-hidden mb-3">
+    <div
+      className="rounded-xl overflow-hidden mb-3"
+      style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+    >
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-5 py-4 hover:bg-paper/50 transition-colors"
+        className="w-full flex items-center gap-3 px-5 py-4 transition-colors"
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         <div className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-[#23262C] text-sm">{pillar.name}</span>
+            <span className="font-semibold text-primary-text text-sm">{pillar.name}</span>
             <GradeBadge grade={pillar.grade} compact />
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-32 h-1.5 bg-hairline rounded-full overflow-hidden hidden sm:block">
+          <div
+            className="w-32 h-1.5 rounded-full overflow-hidden hidden sm:block"
+            style={{ background: 'rgba(255,255,255,0.07)' }}
+          >
             <div className="h-full rounded-full" style={{ width: `${pillar.pct}%`, backgroundColor: gradeBarColor(pillar.grade) }} />
           </div>
-          <span className="font-mono-nums text-sm font-semibold w-9 text-right" style={{ color: gradeBarColor(pillar.grade) }}>{pillar.pct}%</span>
-          {open ? <ChevronDown size={15} className="text-muted" /> : <ChevronRight size={15} className="text-muted" />}
+          <span
+            className="font-mono-nums text-sm font-semibold w-9 text-right"
+            style={{ color: gradeBarColor(pillar.grade) }}
+          >
+            {pillar.pct}%
+          </span>
+          {open
+            ? <ChevronDown size={15} className="text-muted-text" />
+            : <ChevronRight size={15} className="text-muted-text" />
+          }
         </div>
       </button>
       {open && (
-        <div className="border-t border-hairline bg-paper/30 px-5 py-3 space-y-2">
+        <div
+          className="border-t px-5 py-3 space-y-2"
+          style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}
+        >
           {pillar.factors.map(f => (
             <button
               key={f.name}
               onClick={() => onFactorClick(f.name)}
-              className={`w-full flex items-center gap-3 py-2 px-2 rounded-lg transition-colors text-left ${activeFactorName === f.name ? 'bg-brand/10' : 'hover:bg-white'}`}
+              className="w-full flex items-center gap-3 py-2 px-2 rounded-lg transition-colors text-left"
+              style={activeFactorName === f.name
+                ? { background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.15)' }
+                : { border: '1px solid transparent' }}
+              onMouseEnter={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              onMouseLeave={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'transparent'; }}
             >
-              <span className="text-sm text-[#23262C] flex-1 min-w-0 truncate">{f.name}</span>
+              <span className="text-sm text-primary-text flex-1 min-w-0 truncate">{f.name}</span>
               <GradeBadge grade={f.grade} compact />
-              <div className="w-20 h-1.5 bg-hairline rounded-full overflow-hidden hidden sm:block">
+              <div
+                className="w-20 h-1.5 rounded-full overflow-hidden hidden sm:block"
+                style={{ background: 'rgba(255,255,255,0.07)' }}
+              >
                 <div className="h-full rounded-full" style={{ width: `${f.pct}%`, backgroundColor: gradeBarColor(f.grade) }} />
               </div>
-              <span className="font-mono-nums text-xs font-medium w-8 text-right" style={{ color: gradeBarColor(f.grade) }}>{f.pct}%</span>
+              <span
+                className="font-mono-nums text-xs font-medium w-8 text-right"
+                style={{ color: gradeBarColor(f.grade) }}
+              >
+                {f.pct}%
+              </span>
             </button>
           ))}
         </div>
@@ -119,33 +164,38 @@ const PillarRow: React.FC<{ pillar: typeof scorecard[0]; onFactorClick: (name: s
 
 const FinancialPanel: React.FC<{ sectionKey: string }> = ({ sectionKey }) => {
   const sec = financials[sectionKey];
-  if (!sec) return <p className="text-muted text-sm p-4">Select a financial section.</p>;
+  if (!sec) return <p className="text-muted-text text-sm p-4">Select a financial section.</p>;
   const periods = sec.metrics[0]?.values.map(v => v.period) ?? [];
   return (
     <div>
       <div className="flex items-center gap-3 mb-5">
         <GradeBadge grade={sec.grade} />
-        <span className="font-mono-nums text-sm font-semibold text-muted">{sec.pct}%</span>
+        <span className="font-mono-nums text-sm font-semibold text-muted-text">{sec.pct}%</span>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-hairline mb-5">
+      <div className="overflow-x-auto rounded-xl mb-5" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-paper/70 border-b border-hairline">
-              <th className="text-left px-5 py-3 text-xs font-medium text-muted">Metric</th>
+            <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Metric</th>
               {periods.map(p => (
-                <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted">{p}</th>
+                <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">{p}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sec.metrics.map(m => (
-              <tr key={m.label} className="border-b border-hairline last:border-0 hover:bg-paper/30 transition-colors">
+              <tr
+                key={m.label}
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
                 <td className="px-5 py-3">
-                  <span className="font-medium text-[#23262C]">{m.label}</span>
-                  <span className="text-xs text-muted ml-1.5">{m.unit}</span>
+                  <span className="font-medium text-primary-text">{m.label}</span>
+                  <span className="text-xs text-muted-text ml-1.5">{m.unit}</span>
                 </td>
                 {m.values.map((v, i) => (
-                  <td key={i} className="px-4 py-3 text-right font-mono-nums text-[#23262C]">
+                  <td key={i} className="px-4 py-3 text-right font-mono-nums text-primary-text">
                     {v.value !== null ? v.value.toLocaleString() : '—'}
                   </td>
                 ))}
@@ -154,9 +204,9 @@ const FinancialPanel: React.FC<{ sectionKey: string }> = ({ sectionKey }) => {
           </tbody>
         </table>
       </div>
-      <div className="bg-paper/50 rounded-xl border border-hairline p-5">
-        <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Commentary</p>
-        <p className="text-sm text-[#23262C] leading-relaxed">{sec.commentary}</p>
+      <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Commentary</p>
+        <p className="text-sm text-primary-text font-serif leading-relaxed">{sec.commentary}</p>
       </div>
     </div>
   );
@@ -173,19 +223,21 @@ export const CompanyPage: React.FC = () => {
   const [aiQuery, setAiQuery] = useState('');
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [readingMode, setReadingMode] = useState(false);
 
   const company = companies.find(c => c.id === id);
 
   if (!company) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-muted">Company not found.</p>
-        <button onClick={() => navigate('/app/dashboard')} className="text-brand hover:underline text-sm">Back to Dashboard</button>
+        <p className="text-muted-text">Company not found.</p>
+        <button onClick={() => navigate('/app/dashboard')} className="text-brand-teal hover:underline text-sm">
+          Back to Dashboard
+        </button>
       </div>
     );
   }
 
-  // For non-krazybee companies, show a placeholder
   const isKrazybee = id === 'krazybee';
 
   const handleAiQuery = (q: string) => {
@@ -202,9 +254,10 @@ export const CompanyPage: React.FC = () => {
     }, 600);
   };
 
-  const activeFactorData = activeFactorName
-    ? qualitativeMetrics.find(m => m.factor === activeFactorName)
-    : null;
+  const recStyle = (rec: string): React.CSSProperties =>
+    rec === 'Subscribe' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
+    rec === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
+    { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
 
   const navItems: { key: Section; label: string }[] = [
     { key: 'overview', label: 'Overview' },
@@ -221,11 +274,14 @@ export const CompanyPage: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row min-h-full page-fade">
       {/* Left nav rail */}
-      <aside className="lg:w-52 lg:shrink-0 border-b lg:border-b-0 lg:border-r border-hairline bg-white">
-        <div className="p-4 border-b border-hairline">
+      <aside
+        className="lg:w-52 lg:shrink-0 border-b lg:border-b-0 lg:border-r"
+        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}
+      >
+        <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <button
             onClick={() => navigate('/app/dashboard')}
-            className="flex items-center gap-1.5 text-xs text-muted hover:text-brand transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors"
           >
             <ArrowLeft size={13} /> Back
           </button>
@@ -237,7 +293,7 @@ export const CompanyPage: React.FC = () => {
                 key={item.key}
                 onClick={() => { setSection(item.key); setActiveFactorName(null); }}
                 className={`shrink-0 lg:w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                  section === item.key ? 'bg-brand text-white' : 'text-muted hover:text-[#23262C] hover:bg-paper'
+                  section === item.key ? 'nav-item-active' : 'nav-item-inactive'
                 }`}
               >
                 {item.label}
@@ -250,22 +306,31 @@ export const CompanyPage: React.FC = () => {
       {/* Main content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         {/* Company header */}
-        <div className="bg-white border-b border-hairline px-6 py-5 sticky top-0 z-10">
+        <div
+          className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
+          style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
           <div className="flex items-start gap-5 flex-wrap">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="text-lg font-semibold text-ink">{company.name}</h1>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
-                  company.recommendation === 'Subscribe' ? 'bg-[#2F8A5F]/10 text-[#2F8A5F]' :
-                  company.recommendation === 'Avoid' ? 'bg-[#B5524A]/10 text-[#B5524A]' :
-                  'bg-[#C08A2E]/10 text-[#C08A2E]'
-                }`}>{company.recommendation}</span>
+                <h1 className="text-lg font-semibold text-primary-text">{company.name}</h1>
+                <span
+                  className="text-xs px-2.5 py-0.5 rounded-full font-semibold"
+                  style={recStyle(company.recommendation)}
+                >
+                  {company.recommendation}
+                </span>
               </div>
-              <p className="text-xs text-muted">
+              <p className="text-xs text-muted-text">
                 {company.sector} · {company.subSector} · {company.hq} · Est. {company.established}
               </p>
-              <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted">
-                <span className="bg-paper px-2 py-0.5 rounded border border-hairline">{company.externalRating} · {company.ratingAgency}</span>
+              <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-text">
+                <span
+                  className="px-2 py-0.5 rounded"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                >
+                  {company.externalRating} · {company.ratingAgency}
+                </span>
                 <span>Internal: {company.internalRating}/15</span>
                 <span>Combined: {company.combinedScore}</span>
               </div>
@@ -273,13 +338,19 @@ export const CompanyPage: React.FC = () => {
             <div className="flex items-center gap-4 shrink-0">
               <ScoreRing score={company.healthScore} size={68} strokeWidth={6} />
               <div className="flex flex-col gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-deep transition-colors">
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium"
+                >
                   <Bell size={13} /> Alert
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline text-xs font-medium hover:bg-paper transition-colors">
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"
+                >
                   <Download size={13} /> PDF
                 </button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline text-xs font-medium hover:bg-paper transition-colors">
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"
+                >
                   <Star size={13} /> Watch
                 </button>
               </div>
@@ -291,16 +362,20 @@ export const CompanyPage: React.FC = () => {
         {!isKrazybee && (
           <div className="p-8 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 rounded-full bg-brand/10 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp size={28} className="text-brand" />
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}
+              >
+                <TrendingUp size={28} />
               </div>
-              <h2 className="text-lg font-semibold text-ink mb-2">Full report for {company.name}</h2>
-              <p className="text-sm text-muted mb-4 leading-relaxed">
-                This is a prototype. Detailed data is available for KrazyBee Services Limited. Full coverage for {company.name} is in pipeline.
+              <h2 className="text-lg font-semibold text-primary-text mb-2">Full report for {company.name}</h2>
+              <p className="text-sm text-muted-text mb-4 leading-relaxed">
+                This is a prototype. Detailed data is available for KrazyBee Services Limited.
+                Full coverage for {company.name} is in pipeline.
               </p>
               <button
                 onClick={() => navigate('/app/company/krazybee')}
-                className="px-5 py-2.5 rounded-lg bg-brand text-white text-sm font-semibold hover:bg-brand-deep transition-colors"
+                className="px-5 py-2.5 rounded-full btn-gradient text-sm font-semibold"
               >
                 View KrazyBee full report
               </button>
@@ -315,9 +390,8 @@ export const CompanyPage: React.FC = () => {
             {/* ─ OVERVIEW ─ */}
             {section === 'overview' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Overview</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-5">Overview</h2>
 
-                {/* Summary metric cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-7">
                   <MetricCard label="On-book AUM (4Q26)" value="₹9,861" unit="Cr" trend="up" delta="₹3,900 Cr YoY" />
                   <MetricCard label="GNPA (4Q26)" value="1.53" unit="%" trend="up" delta="vs 3.13% FY25" />
@@ -326,36 +400,49 @@ export const CompanyPage: React.FC = () => {
                 </div>
 
                 {/* Health score chart */}
-                <div className="bg-white rounded-xl border border-hairline p-5 mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-[#23262C] text-sm">Health Score — 12-Month Trend</h3>
-                    <div className="flex items-center gap-3 text-xs text-muted">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#2F8A5F] inline-block" /> Score improvement</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#B5524A] inline-block" /> Score decline</span>
+                <div className="glass-card p-5 mb-6">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <h3 className="font-semibold text-primary-text text-sm">Health Score — 12-Month Trend</h3>
+                    <div className="flex items-center gap-3 text-xs text-muted-text">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#34D399' }} />
+                        Score improvement
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#FB7185' }} />
+                        Score decline
+                      </span>
                     </div>
                   </div>
                   <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={healthScoreSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E4E5E0" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6A6E76' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[55, 75]} tick={{ fontSize: 11, fill: '#6A6E76' }} axisLine={false} tickLine={false} />
+                    <AreaChart data={healthScoreSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                      <defs>
+                        <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#2DD4BF" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[55, 75]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Line
+                      <Area
                         type="monotone"
                         dataKey="score"
-                        stroke="#0F6E64"
+                        stroke="#2DD4BF"
                         strokeWidth={2}
+                        fill="url(#scoreGrad)"
                         dot={(props) => <CustomDot {...props} />}
-                        activeDot={{ r: 6 }}
+                        activeDot={{ r: 6, fill: '#2DD4BF' }}
                       />
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
-                  <p className="text-[11px] text-muted mt-2">Hover data points with arrows to see the reason for score change.</p>
+                  <p className="text-[11px] text-muted-text mt-2">Hover data points with arrows to see the reason for score change.</p>
                 </div>
 
                 {/* Scorecard */}
                 <div className="mb-6">
-                  <h3 className="font-semibold text-[#23262C] text-sm mb-4">Proprietary Scorecard</h3>
+                  <h3 className="font-semibold text-primary-text text-sm mb-4">Proprietary Scorecard</h3>
                   {scorecard.map(p => (
                     <PillarRow
                       key={p.name}
@@ -371,43 +458,43 @@ export const CompanyPage: React.FC = () => {
 
                 {/* Ownership + borrower mix */}
                 <div className="grid sm:grid-cols-2 gap-5 mb-6">
-                  <div className="bg-white rounded-xl border border-hairline p-5">
-                    <h3 className="font-semibold text-[#23262C] text-sm mb-4">Ownership Structure</h3>
+                  <div className="glass-card p-5">
+                    <h3 className="font-semibold text-primary-text text-sm mb-4">Ownership Structure</h3>
                     <div className="flex gap-4 items-center">
                       <PieChart width={120} height={120}>
                         <Pie data={ownershipData} cx={55} cy={55} innerRadius={35} outerRadius={55} dataKey="pct" paddingAngle={1}>
-                          {ownershipData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                          {ownershipData.map((_, i) => <Cell key={i} fill={VIZ_COLORS[i % VIZ_COLORS.length]} />)}
                         </Pie>
                       </PieChart>
                       <div className="flex-1 space-y-1 min-w-0">
                         {ownershipData.slice(0, 5).map((o, i) => (
                           <div key={o.name} className="flex items-center gap-2 text-xs">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                            <span className="truncate text-muted flex-1">{o.name}</span>
-                            <span className="font-mono-nums font-medium text-[#23262C]">{o.pct}%</span>
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+                            <span className="truncate text-muted-text flex-1">{o.name}</span>
+                            <span className="font-mono-nums font-medium text-primary-text">{o.pct}%</span>
                           </div>
                         ))}
-                        <p className="text-[10px] text-muted pl-4 mt-1">+{ownershipData.length - 5} more</p>
+                        <p className="text-[10px] text-muted-text pl-4 mt-1">+{ownershipData.length - 5} more</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-xl border border-hairline p-5">
-                    <h3 className="font-semibold text-[#23262C] text-sm mb-4">Borrower Mix (AUM)</h3>
+                  <div className="glass-card p-5">
+                    <h3 className="font-semibold text-primary-text text-sm mb-4">Borrower Mix (AUM)</h3>
                     <div className="flex gap-4 items-center">
                       <PieChart width={120} height={120}>
                         <Pie data={borrowerMix} cx={55} cy={55} innerRadius={35} outerRadius={55} dataKey="pct" paddingAngle={2}>
-                          {borrowerMix.map((_, i) => <Cell key={i} fill={['#0F6E64', '#C08A2E', '#6A6E76'][i]} />)}
+                          {borrowerMix.map((_, i) => <Cell key={i} fill={VIZ_COLORS[i]} />)}
                         </Pie>
                       </PieChart>
                       <div className="flex-1 space-y-2 min-w-0">
                         {borrowerMix.map((b, i) => (
                           <div key={b.name} className="text-xs">
                             <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: ['#0F6E64', '#C08A2E', '#6A6E76'][i] }} />
-                              <span className="truncate text-muted">{b.name}</span>
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i] }} />
+                              <span className="truncate text-muted-text">{b.name}</span>
                             </div>
-                            <p className="font-mono-nums font-semibold text-[#23262C] ml-3.5">{b.pct}% · ₹{b.aum} Cr</p>
+                            <p className="font-mono-nums font-semibold text-primary-text ml-3.5">{b.pct}% · ₹{b.aum} Cr</p>
                           </div>
                         ))}
                       </div>
@@ -420,23 +507,41 @@ export const CompanyPage: React.FC = () => {
             {/* ─ BUSINESS & MANAGEMENT ─ */}
             {section === 'business' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Business & Management</h2>
+                <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+                  <h2 className="text-base font-semibold text-primary-text">Business & Management</h2>
+                  <button
+                    onClick={() => setReadingMode(v => !v)}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${readingMode ? 'btn-gradient' : 'btn-outline-glass'}`}
+                  >
+                    <BookOpen size={13} /> {readingMode ? 'Exit reading mode' : 'Reading mode'}
+                  </button>
+                </div>
                 <div className="space-y-4">
                   {qualitativeMetrics.map(m => (
                     <div
                       key={m.factor}
                       id={`factor-${m.factor}`}
-                      className={`bg-white rounded-xl border p-5 transition-colors ${activeFactorName === m.factor ? 'border-brand/40 ring-1 ring-brand/20' : 'border-hairline'}`}
+                      className={`glass-card p-5 transition-colors ${activeFactorName === m.factor ? '' : ''}`}
+                      style={activeFactorName === m.factor
+                        ? { borderColor: 'rgba(45,212,191,0.3)', boxShadow: '0 0 0 1px rgba(45,212,191,0.15), 0 12px 34px rgba(0,0,0,0.38)' }
+                        : {}}
                     >
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
-                        <h3 className="font-semibold text-[#23262C]">{m.factor}</h3>
+                        <h3 className="font-semibold text-primary-text">{m.factor}</h3>
                         <GradeBadge grade={m.grade} />
-                        <span className="font-mono-nums text-sm text-muted">{m.pct}%</span>
+                        <span className="font-mono-nums text-sm text-muted-text">{m.pct}%</span>
                       </div>
-                      <div className="h-1.5 bg-hairline rounded-full mb-4 overflow-hidden">
+                      <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
                         <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(m.grade) }} />
                       </div>
-                      <p className="text-sm text-[#23262C] leading-relaxed">{m.commentary}</p>
+                      <p
+                        className="text-sm leading-relaxed"
+                        style={readingMode
+                          ? { background: 'rgba(245,240,230,0.95)', color: '#1a1a1a', borderRadius: '12px', padding: '1rem', fontFamily: 'Newsreader, Georgia, serif' }
+                          : { color: '#E9F3F1', fontFamily: 'Newsreader, Georgia, serif' }}
+                      >
+                        {m.commentary}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -446,15 +551,13 @@ export const CompanyPage: React.FC = () => {
             {/* ─ FINANCIAL ANALYSIS ─ */}
             {section === 'financial' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Financial Analysis</h2>
-                <div className="flex gap-2 flex-wrap mb-6">
+                <h2 className="text-base font-semibold text-primary-text mb-5">Financial Analysis</h2>
+                <div className="pill-track flex gap-1 mb-6 flex-wrap">
                   {Object.keys(financials).map(k => (
                     <button
                       key={k}
                       onClick={() => setFinancialTab(k)}
-                      className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
-                        financialTab === k ? 'bg-brand text-white' : 'bg-white border border-hairline text-muted hover:text-[#23262C]'
-                      }`}
+                      className={financialTab === k ? 'pill-active' : 'pill-inactive'}
                     >
                       {k === 'fundingLiquidity' ? 'Funding & Liquidity' :
                        k === 'capitalization' ? 'Capitalization' :
@@ -469,31 +572,46 @@ export const CompanyPage: React.FC = () => {
             {/* ─ EXTERNAL RATINGS ─ */}
             {section === 'external' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">External Ratings</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-5">External Ratings</h2>
                 {externalRatings.map(r => (
-                  <div key={r.agency} className="bg-white rounded-xl border border-hairline p-6 mb-4">
+                  <div key={r.agency} className="glass-card p-6 mb-4">
                     <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                       <div>
-                        <p className="text-xs text-muted uppercase tracking-wider mb-1">{r.agency}</p>
+                        <p className="text-xs text-muted-text uppercase tracking-wider mb-1">{r.agency}</p>
                         <div className="flex items-center gap-3">
-                          <span className="font-mono-nums text-2xl font-bold text-ink">{r.rating}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded font-medium ${r.outlook === 'Stable' ? 'bg-[#2F8A5F]/10 text-[#2F8A5F]' : 'bg-[#C08A2E]/10 text-[#C08A2E]'}`}>
+                          <span className="font-mono-nums text-2xl font-bold text-primary-text">{r.rating}</span>
+                          <span
+                            className="text-xs px-2 py-0.5 rounded font-medium"
+                            style={r.outlook === 'Stable'
+                              ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' }
+                              : { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }}
+                          >
                             {r.outlook}
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs text-muted bg-paper px-3 py-1.5 rounded border border-hairline">{r.date}</span>
+                      <span
+                        className="text-xs text-muted-text px-3 py-1.5 rounded"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        {r.date}
+                      </span>
                     </div>
-                    <div className="bg-paper/60 rounded-lg p-4">
-                      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Rating Rationale</p>
-                      <p className="text-sm text-[#23262C] leading-relaxed">{r.rationale}</p>
+                    <div className="rounded-lg p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Rating Rationale</p>
+                      <p className="text-sm text-primary-text font-serif leading-relaxed">{r.rationale}</p>
                     </div>
                   </div>
                 ))}
-                <div className="bg-brand-tint rounded-xl border border-brand/20 p-5 text-sm">
-                  <p className="font-medium text-brand mb-1">Our view vs agency view</p>
-                  <p className="text-muted text-xs leading-relaxed">
-                    Our internal rating of 7/15 (CARE: A) broadly aligns with the agency rating. Key divergence: we weight liquidity thin-ness and borrower profile risk more heavily, resulting in a slightly more cautious near-term outlook despite the positive unicorn development.
+                <div
+                  className="rounded-xl p-5 text-sm"
+                  style={{ background: 'rgba(45,212,191,0.06)', border: '1px solid rgba(45,212,191,0.2)' }}
+                >
+                  <p className="font-medium text-brand-teal mb-1">Our view vs agency view</p>
+                  <p className="text-muted-text text-xs leading-relaxed">
+                    Our internal rating of 7/15 (CARE: A) broadly aligns with the agency rating. Key divergence: we weight
+                    liquidity thin-ness and borrower profile risk more heavily, resulting in a slightly more cautious near-term
+                    outlook despite the positive unicorn development.
                   </p>
                 </div>
               </div>
@@ -502,15 +620,20 @@ export const CompanyPage: React.FC = () => {
             {/* ─ DEVELOPMENTS ─ */}
             {section === 'developments' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Recent Developments</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-5">Recent Developments</h2>
                 <div className="space-y-4">
                   {materialDevelopments.map(d => (
-                    <div key={d.title} className="bg-white rounded-xl border border-hairline p-5">
+                    <div key={d.title} className="glass-card p-5">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="text-xs font-mono-nums font-medium bg-paper px-2.5 py-1 rounded border border-hairline text-muted">{d.date}</span>
-                        <h3 className="font-semibold text-[#23262C] text-sm">{d.title}</h3>
+                        <span
+                          className="text-xs font-mono-nums font-medium px-2.5 py-1 rounded"
+                          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9CB3B1' }}
+                        >
+                          {d.date}
+                        </span>
+                        <h3 className="font-semibold text-primary-text text-sm">{d.title}</h3>
                       </div>
-                      <p className="text-sm text-muted leading-relaxed">{d.body}</p>
+                      <p className="text-sm text-muted-text leading-relaxed font-serif">{d.body}</p>
                     </div>
                   ))}
                 </div>
@@ -520,40 +643,59 @@ export const CompanyPage: React.FC = () => {
             {/* ─ NCD ISSUANCES ─ */}
             {section === 'ncd' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">NCD Issuances</h2>
-                <div className="overflow-x-auto rounded-xl border border-hairline">
-                  <table className="w-full text-sm">
+                <h2 className="text-base font-semibold text-primary-text mb-5">NCD Issuances</h2>
+                <div className="glass-card overflow-hidden mb-4">
+                  <table className="w-full text-sm overflow-x-auto">
                     <thead>
-                      <tr className="bg-paper/70 border-b border-hairline">
-                        <th className="text-left px-5 py-3 text-xs font-medium text-muted">ISIN</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted">Coupon</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted">YTM</th>
-                        <th className="text-center px-4 py-3 text-xs font-medium text-muted">Tenor</th>
-                        <th className="text-right px-4 py-3 text-xs font-medium text-muted">Size (₹ Cr)</th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted">Maturity</th>
+                      <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                        <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">ISIN</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Coupon</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">YTM</th>
+                        <th className="text-center px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Tenor</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Size (₹ Cr)</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Maturity</th>
                       </tr>
                     </thead>
                     <tbody>
                       {ncdIssuances.map(n => (
-                        <tr key={n.isin} className={`border-b border-hairline last:border-0 transition-colors ${n.current ? 'bg-brand-tint' : 'hover:bg-paper/30'}`}>
+                        <tr
+                          key={n.isin}
+                          style={{
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: n.current ? 'rgba(45,212,191,0.06)' : 'transparent',
+                          }}
+                          onMouseEnter={e => { if (!n.current) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                          onMouseLeave={e => { if (!n.current) e.currentTarget.style.background = 'transparent'; }}
+                        >
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs text-[#23262C]">{n.isin}</span>
-                              {n.current && <span className="text-[10px] px-1.5 py-0.5 bg-brand text-white rounded font-bold uppercase">Current</span>}
+                              <span className="font-mono-nums text-xs text-brand-teal">{n.isin}</span>
+                              {n.current && (
+                                <span
+                                  className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase"
+                                  style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}
+                                >
+                                  Current
+                                </span>
+                              )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono-nums">{n.coupon.toFixed(2)}%</td>
-                          <td className="px-4 py-3 text-right font-mono-nums font-semibold text-brand">{n.ytm.toFixed(2)}%</td>
-                          <td className="px-4 py-3 text-center text-muted text-xs">{n.tenor}</td>
-                          <td className="px-4 py-3 text-right font-mono-nums">{n.size.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-xs text-muted">{n.maturity}</td>
+                          <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.coupon.toFixed(2)}%</td>
+                          <td className="px-4 py-3 text-right font-mono-nums font-semibold text-brand-teal">{n.ytm.toFixed(2)}%</td>
+                          <td className="px-4 py-3 text-center text-muted-text text-xs">{n.tenor}</td>
+                          <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.size.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-xs text-muted-text">{n.maturity}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className="mt-4 p-4 bg-paper rounded-xl border border-hairline text-xs text-muted leading-relaxed">
-                  YTM figures are indicative as of research date. Actual secondary market YTM may vary. This is not an offer to buy or sell securities.
+                <div
+                  className="p-4 rounded-xl text-xs text-muted-text leading-relaxed"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                >
+                  YTM figures are indicative as of research date. Actual secondary market YTM may vary.
+                  This is not an offer to buy or sell securities.
                 </div>
               </div>
             )}
@@ -561,21 +703,21 @@ export const CompanyPage: React.FC = () => {
             {/* ─ SECTOR OUTLOOK ─ */}
             {section === 'sector' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Sector Outlook</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-5">Sector Outlook</h2>
                 <div className="space-y-5">
-                  <div className="bg-white rounded-xl border border-hairline p-6">
+                  <div className="glass-card p-6">
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-semibold text-[#23262C]">NBFC Sector — Operating Outlook</h3>
+                      <h3 className="font-semibold text-primary-text">NBFC Sector — Operating Outlook</h3>
                       <GradeBadge grade="Moderate" />
                     </div>
-                    <p className="text-sm text-[#23262C] leading-relaxed">{sectorOutlook.operating}</p>
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{sectorOutlook.operating}</p>
                   </div>
-                  <div className="bg-white rounded-xl border border-hairline p-6">
+                  <div className="glass-card p-6">
                     <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-semibold text-[#23262C]">Digital Unsecured PL Sub-sector</h3>
+                      <h3 className="font-semibold text-primary-text">Digital Unsecured PL Sub-sector</h3>
                       <GradeBadge grade="Moderate" />
                     </div>
-                    <p className="text-sm text-[#23262C] leading-relaxed">{sectorOutlook.subSector}</p>
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{sectorOutlook.subSector}</p>
                   </div>
                 </div>
               </div>
@@ -584,8 +726,8 @@ export const CompanyPage: React.FC = () => {
             {/* ─ SUMMARY TABLE ─ */}
             {section === 'summary' && (
               <div>
-                <h2 className="text-base font-semibold text-ink mb-5">Summary Table</h2>
-                <div className="overflow-x-auto rounded-xl border border-hairline">
+                <h2 className="text-base font-semibold text-primary-text mb-5">Summary Table</h2>
+                <div className="glass-card overflow-hidden">
                   <table className="w-full text-sm">
                     <tbody>
                       {[
@@ -609,9 +751,15 @@ export const CompanyPage: React.FC = () => {
                         { label: 'AUM (4Q26)', value: '₹9,861 Cr' },
                         { label: 'Valuation (Apr 2026)', value: '~$1.5B (post Series E)' },
                       ].map((row, i) => (
-                        <tr key={row.label} className={`border-b border-hairline last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-paper/30'}`}>
-                          <td className="px-5 py-3 text-xs font-medium text-muted w-48">{row.label}</td>
-                          <td className="px-5 py-3 text-sm font-medium text-[#23262C]">{row.value}</td>
+                        <tr
+                          key={row.label}
+                          style={{
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
+                          }}
+                        >
+                          <td className="px-5 py-3 text-xs font-medium text-muted-text w-48">{row.label}</td>
+                          <td className="px-5 py-3 text-sm font-medium text-primary-text">{row.value}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -624,10 +772,15 @@ export const CompanyPage: React.FC = () => {
             {section === 'ai' && (
               <div>
                 <div className="flex items-center gap-2 mb-5">
-                  <h2 className="text-base font-semibold text-ink">Ask AI</h2>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-brand/10 text-brand font-semibold uppercase tracking-wide">Beta</span>
+                  <h2 className="text-base font-semibold text-primary-text">Ask AI</h2>
+                  <span
+                    className="text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wide"
+                    style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}
+                  >
+                    Beta
+                  </span>
                 </div>
-                <p className="text-sm text-muted mb-5">
+                <p className="text-sm text-muted-text mb-5">
                   Ask questions about KrazyBee's financials, business model, ratings, or risk factors. Powered by our research data.
                 </p>
 
@@ -637,7 +790,10 @@ export const CompanyPage: React.FC = () => {
                     <button
                       key={qa.q}
                       onClick={() => { setAiQuery(qa.q); handleAiQuery(qa.q); }}
-                      className="text-xs px-3 py-2 rounded-full bg-white border border-hairline text-muted hover:border-brand/30 hover:text-brand transition-colors"
+                      className="text-xs px-3 py-2 rounded-full text-muted-text transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(45,212,191,0.3)'; e.currentTarget.style.color = '#2DD4BF'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#9CB3B1'; }}
                     >
                       {qa.q}
                     </button>
@@ -652,11 +808,15 @@ export const CompanyPage: React.FC = () => {
                     onChange={e => setAiQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && aiQuery.trim() && handleAiQuery(aiQuery)}
                     placeholder="Ask a question about KrazyBee…"
-                    className="flex-1 px-4 py-3 border border-hairline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+                    className="flex-1 px-4 py-3 rounded-lg text-sm focus:outline-none text-primary-text"
+                    style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                    }}
                   />
                   <button
                     onClick={() => aiQuery.trim() && handleAiQuery(aiQuery)}
-                    className="px-4 py-3 rounded-lg bg-brand text-white hover:bg-brand-deep transition-colors"
+                    className="px-4 py-3 rounded-lg btn-gradient"
                   >
                     <Send size={16} />
                   </button>
@@ -664,27 +824,33 @@ export const CompanyPage: React.FC = () => {
 
                 {/* Answer */}
                 {aiLoading && (
-                  <div className="bg-white rounded-xl border border-hairline p-5 flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
-                    <p className="text-sm text-muted">Thinking…</p>
+                  <div className="glass-card p-5 flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#2DD4BF' }} />
+                    <p className="text-sm text-muted-text">Thinking…</p>
                   </div>
                 )}
                 {aiAnswer && !aiLoading && (
-                  <div className="bg-white rounded-xl border border-brand/20 p-5 page-fade">
+                  <div
+                    className="glass-card p-5 page-fade"
+                    style={{ borderColor: 'rgba(45,212,191,0.2)' }}
+                  >
                     <div className="flex items-center gap-2 mb-3">
-                      <MessageSquare size={15} className="text-brand" />
-                      <p className="text-xs font-semibold text-brand uppercase tracking-wide">Answer</p>
+                      <MessageSquare size={15} style={{ color: '#2DD4BF' }} />
+                      <p className="text-xs font-semibold text-brand-teal uppercase tracking-wide">Answer</p>
                     </div>
-                    <p className="text-sm text-[#23262C] leading-relaxed">{aiAnswer}</p>
-                    <p className="text-[11px] text-muted mt-4 pt-3 border-t border-hairline">
+                    <p className="text-sm text-primary-text font-serif leading-relaxed">{aiAnswer}</p>
+                    <p
+                      className="text-[11px] text-muted-text mt-4 pt-3"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}
+                    >
                       This response is based on the research report data. Not personalised investment advice.
                     </p>
                   </div>
                 )}
                 {!aiLoading && !aiAnswer && (
                   <div className="text-center py-10">
-                    <MessageSquare size={32} className="mx-auto text-muted/30 mb-3" />
-                    <p className="text-sm text-muted">Select a question above or type your own</p>
+                    <MessageSquare size={32} className="mx-auto mb-3" style={{ color: 'rgba(156,179,177,0.25)' }} />
+                    <p className="text-sm text-muted-text">Select a question above or type your own</p>
                   </div>
                 )}
               </div>

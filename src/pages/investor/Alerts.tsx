@@ -56,12 +56,12 @@ const icons = {
   governance: AlertTriangle,
 };
 
-const iconColors = {
-  score_up: 'text-[#2F8A5F] bg-[#2F8A5F]/10',
-  score_down: 'text-[#B5524A] bg-[#B5524A]/10',
-  material: 'text-brand bg-brand/10',
-  rating: 'text-[#23262C] bg-paper',
-  governance: 'text-[#C08A2E] bg-[#C08A2E]/10',
+const iconStyles: Record<string, React.CSSProperties> = {
+  score_up: { background: 'rgba(52,211,153,0.15)', color: '#34D399' },
+  score_down: { background: 'rgba(251,113,133,0.15)', color: '#FB7185' },
+  material: { background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' },
+  rating: { background: 'rgba(255,255,255,0.07)', color: '#9CB3B1' },
+  governance: { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' },
 };
 
 export const Alerts: React.FC = () => {
@@ -71,33 +71,47 @@ export const Alerts: React.FC = () => {
     <div className="p-6 page-fade max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-7">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Alerts</h1>
-          <p className="text-sm text-muted mt-0.5">
-            {unread > 0 ? <span className="text-[#C08A2E] font-medium">{unread} unread</span> : 'All caught up'}
+          <h1 className="text-xl font-semibold text-primary-text">Alerts</h1>
+          <p className="text-sm text-muted-text mt-0.5">
+            {unread > 0
+              ? <span style={{ color: '#FBBF24' }} className="font-medium">{unread} unread</span>
+              : 'All caught up'}
             {' '}· Material changes across your holdings
           </p>
         </div>
-        <button className="text-xs text-muted hover:text-brand transition-colors">Mark all read</button>
+        <button className="text-xs text-muted-text hover:text-brand-teal transition-colors">Mark all read</button>
       </div>
 
       <div className="space-y-3">
         {alerts.map(a => {
           const Icon = icons[a.type as keyof typeof icons];
-          const colorClass = iconColors[a.type as keyof typeof iconColors];
+          const iconStyle = iconStyles[a.type as keyof typeof iconStyles];
           return (
-            <div key={a.id} className={`bg-white rounded-xl border p-5 flex gap-4 transition-colors ${!a.read ? 'border-brand/30 bg-brand-tint/30' : 'border-hairline'}`}>
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+            <div
+              key={a.id}
+              className="glass-card p-5 flex gap-4"
+              style={!a.read ? { borderColor: 'rgba(45,212,191,0.2)', background: 'rgba(45,212,191,0.05)' } : {}}
+            >
+              <div
+                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                style={iconStyle}
+              >
                 <Icon size={16} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-[#23262C] text-sm">{a.title}</p>
-                    <p className="text-xs text-muted mt-0.5">{a.issuer} · {a.date}</p>
+                    <p className="font-semibold text-primary-text text-sm">{a.title}</p>
+                    <p className="text-xs text-muted-text mt-0.5">{a.issuer} · {a.date}</p>
                   </div>
-                  {!a.read && <span className="w-2 h-2 rounded-full bg-brand shrink-0 mt-1.5" />}
+                  {!a.read && (
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0 mt-1.5"
+                      style={{ background: '#2DD4BF' }}
+                    />
+                  )}
                 </div>
-                <p className="text-sm text-muted mt-2 leading-relaxed">{a.body}</p>
+                <p className="text-sm text-muted-text mt-2 leading-relaxed">{a.body}</p>
               </div>
             </div>
           );
@@ -105,8 +119,8 @@ export const Alerts: React.FC = () => {
       </div>
 
       {/* Alert preferences */}
-      <div className="mt-8 bg-white rounded-xl border border-hairline p-5">
-        <h3 className="font-semibold text-[#23262C] mb-4">Alert Preferences</h3>
+      <div className="mt-8 glass-card p-5">
+        <h3 className="font-semibold text-primary-text mb-4">Alert Preferences</h3>
         <div className="space-y-3">
           {[
             { label: 'Health Score changes (±3 points)', on: true },
@@ -115,10 +129,20 @@ export const Alerts: React.FC = () => {
             { label: 'NCD maturity reminders (30d prior)', on: false },
             { label: 'New coverage added', on: true },
           ].map(pref => (
-            <label key={pref.label} className="flex items-center justify-between py-2 border-b border-hairline last:border-0 cursor-pointer">
-              <span className="text-sm text-[#23262C]">{pref.label}</span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${pref.on ? 'bg-brand' : 'bg-hairline'}`}>
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${pref.on ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            <label
+              key={pref.label}
+              className="flex items-center justify-between py-2 cursor-pointer"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <span className="text-sm text-primary-text">{pref.label}</span>
+              <div
+                className="w-10 h-5 rounded-full relative transition-colors"
+                style={{ background: pref.on ? 'linear-gradient(135deg,#2DD4BF,#22D3EE)' : 'rgba(255,255,255,0.1)' }}
+              >
+                <div
+                  className="absolute top-0.5 w-4 h-4 rounded-full shadow transition-transform"
+                  style={{ background: '#fff', transform: pref.on ? 'translateX(1.25rem)' : 'translateX(0.125rem)' }}
+                />
               </div>
             </label>
           ))}

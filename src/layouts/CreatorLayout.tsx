@@ -18,16 +18,23 @@ export const CreatorLayout: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-paper">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
+      {/* Radial glows */}
+      <div className="radial-glow-tl" />
+      <div className="radial-glow-br" />
+
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-60 bg-ink flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex items-center h-14 px-5 border-b border-white/10">
-          <Wordmark lightMode size="md" />
-          <div className="ml-2 px-2 py-0.5 rounded text-[10px] font-medium bg-brand/30 text-brand-tint">Creator</div>
-          <button className="ml-auto lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-30 w-60 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: 'rgba(10,25,27,0.85)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        <div className="flex items-center h-14 px-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Wordmark size="md" />
+          <div className="ml-2 px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' }}>Creator</div>
+          <button className="ml-auto lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(false)}>
             <X size={18} />
           </button>
         </div>
@@ -39,7 +46,7 @@ export const CreatorLayout: React.FC = () => {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand text-white' : 'text-white/60 hover:text-white hover:bg-white/10'
+                  isActive ? 'nav-item-active' : 'nav-item-inactive'
                 }`
               }
             >
@@ -48,44 +55,57 @@ export const CreatorLayout: React.FC = () => {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/10">
-          <p className="text-[10px] text-white/30 leading-relaxed">
+        <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-[10px] text-faint-text leading-relaxed">
             Research workspace. Published reports go to investor subscribers.
           </p>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 bg-white border-b border-hairline flex items-center gap-4 px-4 shrink-0 z-10">
-          <button className="lg:hidden text-muted hover:text-[#23262C]" onClick={() => setSidebarOpen(true)}>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
+        <header
+          className="h-14 flex items-center gap-4 px-4 shrink-0 z-10"
+          style={{ background: 'rgba(11,31,32,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          <button className="lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(true)}>
             <Menu size={20} />
           </button>
           <div className="hidden sm:flex items-center gap-2">
-            <span className="text-sm font-medium text-[#23262C]">Research Creator Workspace</span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-brand/10 text-brand">INTERNAL</span>
+            <span className="text-sm font-medium text-primary-text">Research Creator Workspace</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>INTERNAL</span>
           </div>
           <div className="relative ml-auto">
             <button
               onClick={() => setUserMenuOpen(v => !v)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-paper transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div className="w-7 h-7 rounded-full bg-[#C08A2E]/20 text-[#C08A2E] flex items-center justify-center text-xs font-semibold">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'rgba(251,191,36,0.2)', color: '#FBBF24' }}>
                 {userName.charAt(0).toUpperCase()}
               </div>
-              <span className="hidden sm:inline text-sm font-medium">{userName}</span>
-              <ChevronDown size={14} className="text-muted" />
+              <span className="hidden sm:inline text-sm font-medium text-primary-text">{userName}</span>
+              <ChevronDown size={14} className="text-muted-text" />
             </button>
             {userMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-hairline rounded-lg shadow-lg z-50 overflow-hidden">
+              <div
+                className="absolute right-0 top-full mt-1 w-48 rounded-lg z-50 overflow-hidden"
+                style={{ background: 'rgba(18,42,44,0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}
+              >
                 <button
                   onClick={() => { navigate('/app/dashboard'); setUserMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left hover:bg-paper transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left text-muted-text hover:text-primary-text transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <RefreshCw size={14} className="text-muted" /> Switch to Investor View
+                  <RefreshCw size={14} /> Switch to Investor View
                 </button>
                 <button
                   onClick={() => { logout(); navigate('/'); setUserMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left hover:bg-paper text-[#B5524A] transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left transition-colors"
+                  style={{ color: '#FB7185' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,113,133,0.08)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <LogOut size={14} /> Sign out
                 </button>

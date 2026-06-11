@@ -3,8 +3,8 @@ import { LineChart, Line, ResponsiveContainer } from 'recharts';
 export const Sparkline: React.FC<{ data: number[]; positive?: boolean }> = ({ data, positive }) => {
   const first = data[0];
   const last = data[data.length - 1];
-  const color = positive !== undefined ? (positive ? '#2F8A5F' : '#B5524A') :
-    last >= first ? '#2F8A5F' : '#B5524A';
+  const color = positive !== undefined ? (positive ? '#34D399' : '#FB7185') :
+    last >= first ? '#34D399' : '#FB7185';
   const pts = data.map((v, i) => ({ v, i }));
   return (
     <div style={{ width: 80, height: 32 }}>

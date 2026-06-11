@@ -8,16 +8,19 @@ interface Props {
 }
 
 export const MetricCard: React.FC<Props> = ({ label, value, unit, trend, delta, highlight }) => {
-  const trendColor = trend === 'up' ? 'text-[#2F8A5F]' : trend === 'down' ? 'text-[#B5524A]' : 'text-muted';
+  const trendColor = trend === 'up' ? '#34D399' : trend === 'down' ? '#FB7185' : '#9CB3B1';
   const arrow = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '';
   return (
-    <div className={`rounded-lg border p-4 ${highlight ? 'border-brand/30 bg-brand-tint' : 'border-hairline bg-white'}`}>
-      <p className="text-xs text-muted mb-1 leading-snug">{label}</p>
+    <div
+      className={`glass-card p-4 transition-all duration-200 ${highlight ? 'border-brand-teal/20' : ''}`}
+      style={highlight ? { borderColor: 'rgba(45,212,191,0.25)', background: 'rgba(45,212,191,0.08)' } : {}}
+    >
+      <p className="text-xs text-muted-text mb-1 leading-snug">{label}</p>
       <div className="flex items-baseline gap-1">
-        <span className="font-mono-nums text-xl font-semibold text-[#23262C]">{value}</span>
-        {unit && <span className="text-xs text-muted">{unit}</span>}
+        <span className="font-mono-nums text-xl font-bold text-primary-text">{value}</span>
+        {unit && <span className="text-xs text-muted-text">{unit}</span>}
       </div>
-      {delta && <p className={`text-xs mt-1 ${trendColor}`}>{arrow} {delta}</p>}
+      {delta && <p className="text-xs mt-1 font-medium" style={{ color: trendColor }}>{arrow} {delta}</p>}
     </div>
   );
 };

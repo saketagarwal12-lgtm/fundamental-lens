@@ -33,17 +33,24 @@ export const InvestorLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-paper">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
+      {/* Radial glows */}
+      <div className="radial-glow-tl" />
+      <div className="radial-glow-br" />
+
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/60 z-20 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-60 bg-ink flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex items-center h-14 px-5 border-b border-white/10">
-          <Wordmark lightMode size="md" />
-          <button className="ml-auto lg:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-30 w-60 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ background: 'rgba(10,25,27,0.85)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
+      >
+        <div className="flex items-center h-14 px-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <Wordmark size="md" />
+          <button className="ml-auto lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(false)}>
             <X size={18} />
           </button>
         </div>
@@ -55,7 +62,7 @@ export const InvestorLayout: React.FC = () => {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand text-white' : 'text-white/60 hover:text-white hover:bg-white/10'
+                  isActive ? 'nav-item-active' : 'nav-item-inactive'
                 }`
               }
             >
@@ -64,19 +71,22 @@ export const InvestorLayout: React.FC = () => {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/10">
-          <p className="text-[10px] text-white/30 leading-relaxed">
+        <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-[10px] text-faint-text leading-relaxed">
             Research, not personalised investment advice. Investments carry risk.
           </p>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
         {/* Top bar */}
-        <header className="h-14 bg-white border-b border-hairline flex items-center gap-4 px-4 shrink-0 z-10">
+        <header
+          className="h-14 flex items-center gap-4 px-4 shrink-0 z-10"
+          style={{ background: 'rgba(11,31,32,0.8)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
           <button
-            className="lg:hidden text-muted hover:text-[#23262C]"
+            className="lg:hidden text-muted-text hover:text-primary-text"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu size={20} />
@@ -84,7 +94,7 @@ export const InvestorLayout: React.FC = () => {
 
           {/* Search */}
           <div className="flex-1 max-w-lg relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-text pointer-events-none" />
             <input
               type="search"
               placeholder="Search issuers, ISINs…"
@@ -92,25 +102,40 @@ export const InvestorLayout: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setShowResults(true); }}
               onFocus={() => setShowResults(true)}
               onBlur={() => setTimeout(() => setShowResults(false), 150)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-paper border border-hairline rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg focus:outline-none transition-colors"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#E9F3F1',
+              }}
             />
             {showResults && results.length > 0 && (
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-hairline rounded-lg shadow-lg z-50 overflow-hidden">
+              <div
+                className="absolute top-full mt-1 left-0 right-0 rounded-lg z-50 overflow-hidden"
+                style={{ background: 'rgba(18,42,44,0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}
+              >
                 {results.map(c => (
                   <button
                     key={c.id}
                     onMouseDown={() => handleSelectCompany(c.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-paper transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#23262C] truncate">{c.name}</p>
-                      <p className="text-xs text-muted">{c.sector} · {c.externalRating}</p>
+                      <p className="text-sm font-medium text-primary-text truncate">{c.name}</p>
+                      <p className="text-xs text-muted-text">{c.sector} · {c.externalRating}</p>
                     </div>
-                    <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded shrink-0 ${
-                      c.recommendation === 'Subscribe' ? 'bg-[#2F8A5F]/10 text-[#2F8A5F]' :
-                      c.recommendation === 'Avoid' ? 'bg-[#B5524A]/10 text-[#B5524A]' :
-                      'bg-[#C08A2E]/10 text-[#C08A2E]'
-                    }`}>
+                    <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                      c.recommendation === 'Subscribe' ? 'text-[#34D399]' :
+                      c.recommendation === 'Avoid' ? 'text-[#FB7185]' :
+                      'text-[#FBBF24]'
+                    }`} style={{
+                      background: c.recommendation === 'Subscribe' ? 'rgba(52,211,153,0.15)' :
+                        c.recommendation === 'Avoid' ? 'rgba(251,113,133,0.15)' :
+                        'rgba(251,191,36,0.15)',
+                    }}>
                       {c.recommendation}
                     </span>
                   </button>
@@ -123,25 +148,35 @@ export const InvestorLayout: React.FC = () => {
           <div className="relative ml-auto">
             <button
               onClick={() => setUserMenuOpen(v => !v)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-paper transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <div className="w-7 h-7 rounded-full bg-brand/20 text-brand flex items-center justify-center text-xs font-semibold">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style={{ background: 'rgba(45,212,191,0.2)', color: '#2DD4BF' }}>
                 {userName.charAt(0).toUpperCase()}
               </div>
-              <span className="hidden sm:inline text-sm font-medium">{userName}</span>
-              <ChevronDown size={14} className="text-muted" />
+              <span className="hidden sm:inline text-sm font-medium text-primary-text">{userName}</span>
+              <ChevronDown size={14} className="text-muted-text" />
             </button>
             {userMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-hairline rounded-lg shadow-lg z-50 overflow-hidden">
+              <div
+                className="absolute right-0 top-full mt-1 w-48 rounded-lg z-50 overflow-hidden"
+                style={{ background: 'rgba(18,42,44,0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}
+              >
                 <button
                   onClick={() => { navigate('/creator/pipeline'); setUserMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left hover:bg-paper transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left text-muted-text hover:text-primary-text transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <RefreshCw size={14} className="text-muted" /> Switch to Creator
+                  <RefreshCw size={14} /> Switch to Creator
                 </button>
                 <button
                   onClick={() => { logout(); navigate('/'); setUserMenuOpen(false); }}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left hover:bg-paper text-[#B5524A] transition-colors"
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-left transition-colors"
+                  style={{ color: '#FB7185' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251,113,133,0.08)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   <LogOut size={14} /> Sign out
                 </button>
@@ -156,8 +191,8 @@ export const InvestorLayout: React.FC = () => {
         </main>
 
         {/* Disclaimer strip */}
-        <div className="bg-white border-t border-hairline px-6 py-2 text-center no-print shrink-0">
-          <p className="text-[11px] text-muted">
+        <div className="px-6 py-2 text-center no-print shrink-0" style={{ background: 'rgba(10,25,27,0.6)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <p className="text-[11px] text-faint-text">
             Research, not personalised investment advice. Past performance does not guarantee future results.
             Read all offer documents before investing.
           </p>
