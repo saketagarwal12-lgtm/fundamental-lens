@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { GitBranch, BookOpen, BarChart2, Settings, LogOut, RefreshCw, Menu, X, ChevronDown } from 'lucide-react';
+import { GitBranch, BookOpen, BarChart2, Settings, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +16,12 @@ export const CreatorLayout: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = sessionStorage.getItem('fl-sidebar-collapsed');
+    if (saved !== null) return saved === '1';
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
+  });
+  const toggleCollapsed = () => setCollapsed(v => { sessionStorage.setItem('fl-sidebar-collapsed', v ? '0' : '1'); return !v; });
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
@@ -28,12 +34,26 @@ export const CreatorLayout: React.FC = () => {
       )}
 
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-60 flex flex-col transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed lg:static inset-y-0 left-0 z-30 w-60 ${collapsed ? 'lg:w-[68px]' : 'lg:w-60'} flex flex-col transition-[transform,width] duration-200 ease-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ background: 'rgba(10,25,27,0.85)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <div className="flex items-center h-14 px-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <Wordmark size="md" />
-          <div className="ml-2 px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' }}>Creator</div>
+        <div className={`flex items-center h-14 ${collapsed ? 'lg:px-0 lg:justify-center px-5' : 'px-5'}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <span className={collapsed ? 'lg:hidden' : 'flex items-center'}>
+            <Wordmark size="md" />
+            <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' }}>Creator</span>
+          </span>
+          {collapsed && (
+            <Aperture size={22} strokeWidth={2.2} className="hidden lg:block text-brand-teal" style={{ filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.7))' }} />
+          )}
+          <button
+            onClick={toggleCollapsed}
+            aria-label="Collapse sidebar"
+            className={`ml-auto hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-muted-text hover:text-primary-text transition-colors ${collapsed ? 'lg:hidden' : ''}`}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <ChevronsLeft size={16} />
+          </button>
           <button className="ml-auto lg:hidden text-muted-text hover:text-primary-text" onClick={() => setSidebarOpen(false)}>
             <X size={18} />
           </button>
@@ -44,18 +64,30 @@ export const CreatorLayout: React.FC = () => {
               key={to}
               to={to}
               onClick={() => setSidebarOpen(false)}
+              title={collapsed ? label : undefined}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
                   isActive ? 'nav-item-active' : 'nav-item-inactive'
                 }`
               }
             >
-              <Icon size={16} />
-              {label}
+              <Icon size={16} className="shrink-0" />
+              <span className={collapsed ? 'lg:hidden' : ''}>{label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+        {collapsed && (
+          <button
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            className="hidden lg:flex items-center justify-center h-10 mx-3 mb-2 rounded-md text-muted-text hover:text-primary-text transition-colors"
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <ChevronsRight size={16} />
+          </button>
+        )}
+        <div className={`p-4 ${collapsed ? 'lg:hidden' : ''}`} style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           <p className="text-[10px] text-faint-text leading-relaxed">
             Research workspace. Published reports go to investor subscribers.
           </p>

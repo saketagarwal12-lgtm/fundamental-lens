@@ -41,19 +41,19 @@ export const Dashboard: React.FC = () => {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-        <div className="glass-card p-5 flex items-center gap-4">
+        <div className="glass-card-elevated p-5 flex items-center gap-4">
           <ScoreRing score={avgScore} size={60} strokeWidth={5} />
           <div>
             <p className="text-xs text-muted-text">Avg Portfolio Score</p>
             <p className="font-mono-nums text-lg font-bold text-primary-text mt-0.5">{avgScore}/100</p>
           </div>
         </div>
-        <div className="glass-card p-5">
+        <div className="glass-card-elevated p-5">
           <p className="text-xs text-muted-text mb-2">Holdings</p>
           <p className="font-mono-nums text-3xl font-bold text-primary-text">{portfolioHoldings.length}</p>
           <p className="text-xs text-muted-text mt-1">across 3 sub-sectors</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="glass-card-elevated p-5">
           <p className="text-xs text-muted-text mb-2">Improving (30d)</p>
           <div className="flex items-center gap-2">
             <TrendingUp size={18} style={{ color: '#34D399' }} />
@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <p className="text-xs text-muted-text mt-1">{portfolioHoldings.length - improving} stable / declining</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="glass-card-elevated p-5">
           <p className="text-xs text-muted-text mb-2">Active Alerts</p>
           <div className="flex items-center gap-2">
             <AlertCircle size={18} style={{ color: alertCount > 0 ? '#FBBF24' : '#9CB3B1' }} />

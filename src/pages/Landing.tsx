@@ -46,8 +46,8 @@ const steps = [
 
 const valueChips = [
   { icon: BookOpen, label: 'Fundamental research' },
-  { icon: Activity, label: 'Real-time health score' },
-  { icon: BarChart2, label: 'Financial & non-financial data' },
+  { icon: Activity, label: 'Real-time financial health score' },
+  { icon: BarChart2, label: 'Financial & non-financial database' },
   { icon: Bot, label: 'Interactive AI bot' },
 ];
 
@@ -75,7 +75,7 @@ export const Landing: React.FC = () => {
         style={{ background: 'rgba(11,31,32,0.85)', backdropFilter: 'blur(18px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Wordmark size="lg" />
+          <Wordmark size="xl" />
           <div className="flex items-center gap-3">
             <a href="#features" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">Features</a>
             <a href="#how-it-works" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">How it works</a>
@@ -90,30 +90,33 @@ export const Landing: React.FC = () => {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-20 pb-16 lg:pt-28 lg:pb-24 relative">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <section className="max-w-6xl mx-auto px-6 pt-10 pb-14 lg:pt-12 lg:pb-20 relative">
+        <div className="grid lg:grid-cols-2 gap-10 items-start">
           <div className="page-fade">
+            <div className="mb-5">
+              <Wordmark size="2xl" />
+            </div>
             <div
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4"
               style={{ background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.25)', color: '#2DD4BF' }}
             >
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#2DD4BF' }}></span>
               Now covering 5 NBFC issuers · More launching soon
             </div>
-            <h1 className="font-serif text-4xl lg:text-5xl font-medium text-primary-text leading-tight mb-5 text-glow-teal">
+            <h1 className="font-serif text-4xl lg:text-5xl font-medium text-primary-text leading-tight mb-4 text-glow-teal">
               {BRAND.tagline}
             </h1>
-            <p className="text-lg text-muted-text leading-relaxed mb-6">
-              Access institutional-grade fundamental research, a real-time financial health score, financial &amp; non-financial data, and an interactive AI bot.
+            <p className="text-lg text-muted-text leading-relaxed mb-5">
+              Access institutional-grade fundamental research, a real-time financial health score, financial &amp; non-financial database, and an interactive AI bot with a single click.
             </p>
 
             {/* Value chips */}
-            <div className="flex flex-wrap gap-2 mb-8">
+            <div className="flex flex-wrap gap-2 mb-6">
               {valueChips.map(chip => (
                 <div
                   key={chip.label}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium"
-                  style={{ background: 'rgba(18,42,44,0.55)', border: '1px solid rgba(255,255,255,0.08)', color: '#E9F3F1', backdropFilter: 'blur(12px)' }}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium transition-transform duration-200 hover:-translate-y-0.5"
+                  style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', color: '#E9F3F1', boxShadow: '0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}
                 >
                   <chip.icon size={14} style={{ color: '#2DD4BF' }} />
                   {chip.label}
@@ -229,22 +232,23 @@ export const Landing: React.FC = () => {
             <h2 className="font-serif text-3xl font-medium text-primary-text mb-3">How it works</h2>
             <p className="text-muted-text">From search to informed decision in under five minutes.</p>
           </div>
-          <div className="space-y-8">
-            {steps.map((s, i) => (
-              <div key={s.n} className="flex gap-6 items-start">
+          <div className="space-y-5">
+            {steps.map(s => (
+              <div
+                key={s.n}
+                className="flex gap-5 items-start p-5 rounded-2xl transition-transform duration-200 hover:-translate-y-0.5"
+                style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 12px 30px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}
+              >
                 <div
                   className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center font-mono-nums font-bold text-sm"
                   style={{ background: 'linear-gradient(135deg, #2DD4BF 0%, #22D3EE 100%)', color: '#0B1F20', boxShadow: '0 6px 20px rgba(45,212,191,0.4)' }}
                 >
                   {s.n}
                 </div>
-                <div className="flex-1 pt-2">
+                <div className="flex-1 pt-1">
                   <h3 className="font-semibold text-primary-text mb-1">{s.title}</h3>
                   <p className="text-sm text-muted-text">{s.body}</p>
                 </div>
-                {i < steps.length - 1 && (
-                  <div className="absolute ml-6 mt-12 w-px h-8 hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }} />
-                )}
               </div>
             ))}
           </div>

@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Download, Bell, Star, ArrowLeft, ChevronDown, ChevronRight,
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
-  Users, MapPin, Layers, AlertTriangle,
+  Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
+  LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
+  Newspaper, FileText, Globe, Table, Bot,
 } from 'lucide-react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -239,6 +241,8 @@ export const CompanyPage: React.FC = () => {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [readingMode, setReadingMode] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => sessionStorage.getItem('fl-company-nav-collapsed') === '1');
+  const toggleNav = () => setNavCollapsed(v => { sessionStorage.setItem('fl-company-nav-collapsed', v ? '0' : '1'); return !v; });
 
   const company = companies.find(c => c.id === id);
   const report: CompanyReport | undefined = getReport(id);
@@ -271,17 +275,17 @@ export const CompanyPage: React.FC = () => {
     }, 600);
   };
 
-  const navItems: { key: Section; label: string }[] = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'business', label: 'Business & Management' },
-    { key: 'financial', label: 'Financial Analysis' },
-    { key: 'peers', label: 'Peer Comparison' },
-    { key: 'external', label: 'External Ratings' },
-    { key: 'developments', label: 'Recent Developments' },
-    { key: 'ncd', label: 'NCD Issuances' },
-    { key: 'sector', label: 'Sector Outlook' },
-    { key: 'summary', label: 'Summary Table' },
-    { key: 'ai', label: 'Ask AI' },
+  const navItems: { key: Section; label: string; icon: typeof LayoutGrid }[] = [
+    { key: 'overview', label: 'Overview', icon: LayoutGrid },
+    { key: 'business', label: 'Business & Management', icon: Briefcase },
+    { key: 'financial', label: 'Financial Analysis', icon: LineChartIcon },
+    { key: 'peers', label: 'Peer Comparison', icon: Scale },
+    { key: 'external', label: 'External Ratings', icon: Award },
+    { key: 'developments', label: 'Recent Developments', icon: Newspaper },
+    { key: 'ncd', label: 'NCD Issuances', icon: FileText },
+    { key: 'sector', label: 'Sector Outlook', icon: Globe },
+    { key: 'summary', label: 'Summary Table', icon: Table },
+    { key: 'ai', label: 'Ask AI', icon: Bot },
   ];
 
   const firstName = company.name.split(' ')[0];
@@ -290,11 +294,16 @@ export const CompanyPage: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row min-h-full page-fade">
       {/* Left nav rail */}
-      <aside className="lg:w-52 lg:shrink-0 border-b lg:border-b-0 lg:border-r"
+      <aside className={`${navCollapsed ? 'lg:w-[60px]' : 'lg:w-52'} lg:shrink-0 border-b lg:border-b-0 lg:border-r transition-[width] duration-200 ease-out`}
         style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className="p-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={() => navigate('/app/dashboard')} className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
-            <ArrowLeft size={13} /> Back to dashboard
+        <div className={`p-4 flex items-center ${navCollapsed ? 'lg:justify-center lg:px-0' : 'justify-between'}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <button onClick={() => navigate('/app/dashboard')} title="Back to dashboard"
+            className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
+            <ArrowLeft size={13} /><span className={navCollapsed ? 'lg:hidden' : ''}>Back to dashboard</span>
+          </button>
+          <button onClick={toggleNav} aria-label={navCollapsed ? 'Expand' : 'Collapse'}
+            className={`hidden lg:flex items-center justify-center w-6 h-6 rounded text-muted-text hover:text-primary-text transition-colors ${navCollapsed ? 'lg:hidden' : ''}`}>
+            <ChevronsLeft size={14} />
           </button>
         </div>
         <nav className="p-2 lg:py-4">
@@ -302,11 +311,19 @@ export const CompanyPage: React.FC = () => {
             {navItems.map(item => (
               <button key={item.key}
                 onClick={() => { setSection(item.key); setActiveFactorName(null); }}
-                className={`shrink-0 lg:w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
-                {item.label}
+                title={navCollapsed ? item.label : undefined}
+                className={`shrink-0 lg:w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${navCollapsed ? 'lg:justify-center lg:px-0' : ''} ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
+                <item.icon size={15} className="shrink-0 hidden lg:block" />
+                <span className={navCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
               </button>
             ))}
           </div>
+          {navCollapsed && (
+            <button onClick={toggleNav} aria-label="Expand"
+              className="hidden lg:flex items-center justify-center w-full h-9 mt-2 rounded text-muted-text hover:text-primary-text transition-colors">
+              <ChevronsRight size={15} />
+            </button>
+          )}
         </nav>
       </aside>
 
