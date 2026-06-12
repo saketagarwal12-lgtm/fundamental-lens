@@ -24,7 +24,7 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
   const toggle = (key: string) => { setActive(a => (a === key ? null : key)); setOpenPillar(null); };
 
   return (
-    <div className="glass-card p-5">
+    <div className="glass-card p-5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
         <h3 className="font-semibold text-primary-text text-sm">Total Score</h3>
         <span className="font-mono-nums text-sm">
@@ -38,7 +38,7 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
       </div>
 
       {/* Vertical bars — width ∝ max, fill height ∝ score/max */}
-      <div className="flex gap-3 items-end mb-2" style={{ height: 168 }} role="list" aria-label="Total Score composition">
+      <div className="flex gap-3 items-end mb-2 shrink-0" style={{ height: 200 }} role="list" aria-label="Total Score composition">
         {components.map(c => {
           const color = gradeBarColor(c.grade);
           const isActive = active === c.key;

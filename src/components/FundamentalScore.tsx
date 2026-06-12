@@ -18,20 +18,25 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
 
   return (
     <section className="mb-8" aria-label="Fundamental Score">
-      <div className="grid grid-cols-1 lg:grid-cols-[250px_minmax(0,1fr)_300px] gap-5 mb-5">
+      {/* Row 1 — full-width trend */}
+      <div className="mb-5">
+        <ScoreTrend data={trend} title="Fundamental Score — 12-month trend" max={issuer.max} height={280} />
+      </div>
+
+      {/* Row 2 — gauge · factor assessment · total score */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,28fr)_minmax(0,36fr)_minmax(0,36fr)] gap-5 items-stretch">
         <div className="glass-card-elevated p-5 flex items-center justify-center">
           <ScoreGauge score={issuer.score} max={issuer.max} pct={issuer.pct} caption="Fundamental Score" />
         </div>
-        <ScoreTrend data={trend} title="Fundamental Score — 12-month trend" max={issuer.max} />
         <FactorAssessment pillars={issuerPillars} />
+        <ScoreComposition
+          components={scaled.components}
+          scorecard={report.scorecard}
+          combinedScore={scaled.score}
+          combinedPct={scaled.pct}
+          rating={scaled.rating}
+        />
       </div>
-      <ScoreComposition
-        components={scaled.components}
-        scorecard={report.scorecard}
-        combinedScore={scaled.score}
-        combinedPct={scaled.pct}
-        rating={scaled.rating}
-      />
     </section>
   );
 };
