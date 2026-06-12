@@ -6,16 +6,16 @@ import type { PortfolioHolding } from '../data/portfolio';
 
 // Portfolio-level Fundamental Score hero: weighted-average gauge + trend + contribution strip.
 export const PortfolioFundamentalScore: React.FC<{ holdings: PortfolioHolding[] }> = ({ holdings }) => {
-  const { score, pct, series, contributions } = getPortfolioScore(holdings);
+  const { score, max, pct, covered, series, contributions } = getPortfolioScore(holdings);
 
   return (
     <section className="mb-7" aria-label="Portfolio Fundamental Score">
       <div className="grid lg:grid-cols-[260px_1fr] gap-5 mb-4">
         <div className="glass-card-elevated p-5 flex flex-col items-center justify-center">
-          <ScoreGauge score={score} pct={pct} caption="Portfolio Fundamental Score" />
-          <p className="text-[11px] text-muted-text mt-3 text-center">Holding-weighted average across {holdings.length} holdings</p>
+          <ScoreGauge score={score} max={max} pct={pct} caption="Portfolio Fundamental Score" />
+          <p className="text-[11px] text-muted-text mt-3 text-center">Holding-average issuer score across {covered} covered holdings</p>
         </div>
-        <ScoreTrend data={series} title="Portfolio Fundamental Score — 12-month trend" />
+        <ScoreTrend data={series} title="Portfolio Fundamental Score — 12-month trend" max={max} />
       </div>
 
       {/* Contribution by holding */}
@@ -39,7 +39,7 @@ export const PortfolioFundamentalScore: React.FC<{ holdings: PortfolioHolding[] 
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-text mt-3">Each holding's score (/500) and how far it sits above/below the portfolio average, in percentage points.</p>
+        <p className="text-[11px] text-muted-text mt-3">Each holding's Fundamental Score (/200) and how far it sits above/below the portfolio average, in percentage points.</p>
       </div>
     </section>
   );

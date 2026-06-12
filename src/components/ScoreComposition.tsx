@@ -9,31 +9,36 @@ interface Props {
   components: ComponentScore[];
   scorecard: ScorecardPillar[];
   combinedScore: number;
+  combinedPct: number;
+  rating: number;
   combinedMax?: number;
 }
 
-export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combinedScore, combinedMax = 500 }) => {
+const displayLabel = (c: ComponentScore) => (c.key === 'issuer' ? 'Fundamental' : c.label);
+
+export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combinedScore, combinedPct, rating, combinedMax = 500 }) => {
   const [active, setActive] = useState<string | null>(null);
   const [openPillar, setOpenPillar] = useState<string | null>(null);
 
   const pillar = (name: string) => scorecard.find(p => p.name === name);
-
-  const toggle = (key: string) => {
-    setActive(a => (a === key ? null : key));
-    setOpenPillar(null);
-  };
+  const toggle = (key: string) => { setActive(a => (a === key ? null : key)); setOpenPillar(null); };
 
   return (
     <div className="glass-card p-5">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="font-semibold text-primary-text text-sm">Score Composition</h3>
-        <span className="font-mono-nums text-xs text-muted-text">
-          sums to <span className="text-brand-teal font-semibold">{combinedScore}</span> / {combinedMax}
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+        <h3 className="font-semibold text-primary-text text-sm">Total Score</h3>
+        <span className="font-mono-nums text-sm">
+          <span className="text-brand-teal font-bold">{combinedScore}</span>
+          <span className="text-muted-text"> / {combinedMax}</span>
+          <span className="text-muted-text"> · {combinedPct}%</span>
+          <span className="ml-2 text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.25)' }} title="Internal rating, 1 = best … 10 = worst">
+            Rating {rating}
+          </span>
         </span>
       </div>
 
-      {/* Weighted bar */}
-      <div className="flex gap-1 h-12 mb-2" role="list" aria-label="Score composition">
+      {/* Vertical bars — width ∝ max, fill height ∝ score/max */}
+      <div className="flex gap-3 items-end mb-2" style={{ height: 168 }} role="list" aria-label="Total Score composition">
         {components.map(c => {
           const color = gradeBarColor(c.grade);
           const isActive = active === c.key;
@@ -43,35 +48,37 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
               role="listitem"
               onClick={() => toggle(c.key)}
               aria-expanded={isActive}
-              title={`${c.label}: ${c.score}/${c.max} · ${c.pct}% — click to drill down`}
-              className="relative rounded-lg overflow-hidden transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+              title={`${displayLabel(c)}: ${c.score}/${c.max} · ${c.pct}% — click to drill down`}
+              className="relative h-full rounded-xl overflow-hidden transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
               style={{
                 width: `${c.weightPct}%`,
-                background: 'rgba(255,255,255,0.06)',
+                background: 'rgba(255,255,255,0.05)',
                 border: isActive ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.08)',
                 boxShadow: isActive ? `0 0 16px ${color}55` : 'none',
               }}
             >
+              {/* fill from bottom */}
               <div
-                className="absolute inset-y-0 left-0 transition-all duration-500"
-                style={{ width: `${c.pct}%`, background: `linear-gradient(90deg, ${color}cc, ${color})`, boxShadow: `0 0 12px ${color}66` }}
+                className="absolute inset-x-0 bottom-0 transition-all duration-700"
+                style={{ height: `${c.pct}%`, background: `linear-gradient(0deg, ${color}, ${color}aa)`, boxShadow: `0 0 14px ${color}66` }}
               />
-              <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-white drop-shadow" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-                {c.label}
+              <span className="absolute top-2 inset-x-0 text-center font-mono-nums text-xs font-bold" style={{ color: '#E9F3F1', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                {c.pct}%
               </span>
             </button>
           );
         })}
       </div>
 
-      {/* Labels row, aligned under segments */}
-      <div className="flex gap-1 mb-1">
+      {/* Labels under bars */}
+      <div className="flex gap-3 mb-1">
         {components.map(c => (
           <button key={c.key} onClick={() => toggle(c.key)} className="text-left" style={{ width: `${c.weightPct}%` }}>
-            <p className="text-[11px] text-muted-text truncate flex items-center gap-1">
-              {active === c.key ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-              <span className="font-mono-nums">{c.score}/{c.max}</span>
+            <p className="text-[11px] font-medium text-primary-text truncate flex items-center gap-1">
+              {active === c.key ? <ChevronDown size={11} className="shrink-0" /> : <ChevronRight size={11} className="shrink-0" />}
+              <span className="truncate">{displayLabel(c)}</span>
             </p>
+            <p className="text-[11px] font-mono-nums text-muted-text">{c.score}/{c.max}</p>
             <p className="text-[10px] font-mono-nums" style={{ color: gradeBarColor(c.grade) }}>{c.pct}%</p>
           </button>
         ))}
@@ -82,12 +89,11 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
         <div className="mt-4 pt-4 page-fade" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
           {(() => {
             const c = components.find(x => x.key === active)!;
-            // Issuer → two sub-pillars
             if (c.key === 'issuer') {
               const subs = (c.scorecardName as string[]).map(n => pillar(n)).filter(Boolean) as ScorecardPillar[];
               return (
                 <div className="space-y-3">
-                  <p className="text-xs text-muted-text">Issuer score rolls up two sub-pillars — expand each for its factor heatmap.</p>
+                  <p className="text-xs text-muted-text">The Fundamental Score rolls up two sub-pillars — expand each for its factor heatmap.</p>
                   {subs.map(p => {
                     const open = openPillar === p.name;
                     const color = gradeBarColor(p.grade);
@@ -118,7 +124,6 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
                 </div>
               );
             }
-            // Others → heatmap directly
             const p = pillar(c.scorecardName as string);
             if (!p) return null;
             return (

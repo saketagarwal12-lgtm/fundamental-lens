@@ -228,7 +228,9 @@ export const InvestorLayout: React.FC = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          <div className="max-w-[1400px] mx-auto w-full">
+            <Outlet />
+          </div>
         </main>
 
         {/* Disclaimer strip */}
