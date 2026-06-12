@@ -46,7 +46,7 @@ export const ScoreRing: React.FC<Props> = ({ score, size = 80, strokeWidth = 10,
           >
             {score}%
           </span>
-          {showLabel && <span style={{ fontSize: size * 0.1 }} className="text-muted-text mt-0.5 leading-none">Health</span>}
+          {showLabel && <span style={{ fontSize: size * 0.1 }} className="text-muted-text mt-0.5 leading-none">Score</span>}
         </div>
       </div>
       {label && <span className="text-xs text-muted-text font-medium">{label}</span>}

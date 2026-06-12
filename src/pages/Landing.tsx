@@ -2,24 +2,22 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, BookOpen, Activity, Bot } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
-import { ScoreRing } from '../components/ScoreRing';
-import { GradeBadge } from '../components/GradeBadge';
+import { ScoreGauge } from '../components/ScoreGauge';
+import { Sparkline } from '../components/Sparkline';
 import { BRAND } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
 
-const previewPillars = [
-  { name: 'Business & Management', grade: 'Moderate' as const, pct: 59 },
-  { name: 'Financial Analysis', grade: 'Strong' as const, pct: 70 },
-  { name: 'Issuance Assessment', grade: 'Strong' as const, pct: 70 },
-  { name: 'Pricing', grade: 'Moderate' as const, pct: 63 },
-  { name: 'Econ & Sector Outlook', grade: 'Moderate' as const, pct: 56 },
+const previewComposition = [
+  { label: 'Issuer', score: 134, max: 200, pct: 67, color: '#2DD4BF' },
+  { label: 'Issuance', score: 70, max: 100, pct: 70, color: '#2DD4BF' },
+  { label: 'Pricing', score: 95, max: 150, pct: 63, color: '#FBBF24' },
 ];
 
 const features = [
   {
     icon: BarChart2,
-    title: 'Proprietary Health Score',
-    body: 'A single 0–100 score distilled from 25+ quantitative and qualitative factors — updated as new data arrives. See how your holding has evolved over months, not just today.',
+    title: 'One Fundamental Score, tracked over time',
+    body: 'A single 0–500 score per issuer, broken down across business, financials, issuance, pricing and sector — and followed month over month so you see how a holding evolves, not just where it stands today.',
   },
   {
     icon: Shield,
@@ -41,12 +39,12 @@ const features = [
 const steps = [
   { n: '01', title: 'Search your issuer', body: 'Find any NBFC or bond issuer in our coverage universe by name, ISIN, or rating.' },
   { n: '02', title: 'Read the full report', body: 'Access the scorecard, financials deep-dive, ownership breakdown, and our proprietary recommendation.' },
-  { n: '03', title: 'Monitor in your portfolio', body: 'Add to your watchlist. Get alerted when the Health Score moves or material news breaks.' },
+  { n: '03', title: 'Monitor in your portfolio', body: 'Add to your watchlist. Get alerted when the Fundamental Score moves or material news breaks.' },
 ];
 
 const valueChips = [
   { icon: BookOpen, label: 'Fundamental research' },
-  { icon: Activity, label: 'Real-time financial health score' },
+  { icon: Activity, label: 'Real-time Fundamental Score' },
   { icon: BarChart2, label: 'Financial & non-financial database' },
   { icon: Bot, label: 'Interactive AI bot' },
 ];
@@ -104,7 +102,7 @@ export const Landing: React.FC = () => {
               {BRAND.tagline}
             </h1>
             <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed mb-5">
-              Access institutional-grade fundamental research, a real-time financial health score, financial &amp; non-financial database, and an interactive AI bot with a single click.
+              Access institutional-grade fundamental research, a real-time Fundamental Score, financial &amp; non-financial database, and an interactive AI bot with a single click.
             </p>
 
             {/* Value chips */}
@@ -142,39 +140,40 @@ export const Landing: React.FC = () => {
 
           {/* Hero preview card */}
           <div className="glass-card-elevated p-6 page-fade animate-float">
-            <div className="flex items-start justify-between mb-5">
+            <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-xs text-muted-text uppercase tracking-wider mb-1">Live Preview</p>
+                <p className="text-xs text-muted-text uppercase tracking-wider mb-1">Live Preview · Fundamental Score</p>
                 <h3 className="font-semibold text-primary-text text-[15px]">KrazyBee Services Limited</h3>
                 <p className="text-xs text-muted-text mt-0.5">NBFC · Unsecured Personal Loans · A (Stable)</p>
               </div>
-              <div className="flex items-center gap-3">
-                <ScoreRing score={65} size={72} strokeWidth={6} />
-                <span
-                  className="px-2.5 py-1 rounded-md text-xs font-semibold"
-                  style={{ background: 'rgba(52,211,153,0.15)', color: '#34D399' }}
-                >Subscribe</span>
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold shrink-0" style={{ background: 'rgba(52,211,153,0.15)', color: '#34D399' }}>Subscribe</span>
+            </div>
+
+            {/* Score + sparkline */}
+            <div className="flex items-center gap-4 mb-4">
+              <ScoreGauge score={327} pct={65} rating={7} size={120} strokeWidth={10} caption="Fundamental Score" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-muted-text mb-1">12-month trend</p>
+                <Sparkline data={[310, 310, 305, 310, 315, 315, 310, 320, 320, 320, 335, 327]} />
+                <p className="text-[11px] text-muted-text mt-1 font-mono-nums">327 / 500 · 65% · Rating 7</p>
               </div>
             </div>
-            <div className="space-y-2.5">
-              {previewPillars.map(p => (
-                <div key={p.name} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-text w-36 shrink-0 truncate">{p.name}</span>
+
+            {/* Composition segments */}
+            <div className="space-y-2 mb-1">
+              <p className="text-[11px] text-muted-text uppercase tracking-wider">Composition</p>
+              {previewComposition.map(c => (
+                <div key={c.label} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-text w-20 shrink-0">{c.label}</span>
                   <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${p.pct}%`,
-                        backgroundColor: p.grade === 'Strong' ? '#2DD4BF' : p.grade === 'Moderate' ? '#FBBF24' : '#FB7185',
-                      }}
-                    />
+                    <div className="h-full rounded-full" style={{ width: `${c.pct}%`, background: c.color, boxShadow: `0 0 8px ${c.color}66` }} />
                   </div>
-                  <GradeBadge grade={p.grade} compact />
-                  <span className="text-xs font-mono-nums text-muted-text w-8 text-right">{p.pct}%</span>
+                  <span className="text-[11px] font-mono-nums text-muted-text w-16 text-right">{c.score}/{c.max}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-5 pt-4 grid grid-cols-3 gap-3 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+
+            <div className="mt-4 pt-4 grid grid-cols-3 gap-3 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
               <div>
                 <p className="font-mono-nums text-sm font-semibold text-primary-text">1.53%</p>
                 <p className="text-[10px] text-muted-text mt-0.5">GNPA (4Q26)</p>

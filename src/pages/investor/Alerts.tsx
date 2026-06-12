@@ -6,7 +6,7 @@ const alerts = [
     type: 'score_up',
     issuer: 'KrazyBee Services Limited',
     date: 'Apr 2026',
-    title: 'Health Score increased: 64 → 67',
+    title: 'Fundamental Score increased: 320 → 335',
     body: 'Series E funding round closed at $280M (unicorn valuation). Capital base strengthened significantly.',
     read: false,
   },
@@ -24,7 +24,7 @@ const alerts = [
     type: 'score_down',
     issuer: 'Finora Capital Limited',
     date: 'Mar 2026',
-    title: 'Health Score declined: 57 → 54',
+    title: 'Fundamental Score declined: 285 → 270',
     body: 'GNPA elevated to 4.2% vs sector average of 2.5%. MSME stress indicators rising.',
     read: true,
   },
@@ -123,7 +123,7 @@ export const Alerts: React.FC = () => {
         <h3 className="font-semibold text-primary-text mb-4">Alert Preferences</h3>
         <div className="space-y-3">
           {[
-            { label: 'Health Score changes (±3 points)', on: true },
+            { label: 'Fundamental Score changes (±15 points)', on: true },
             { label: 'External rating actions', on: true },
             { label: 'Material developments', on: true },
             { label: 'NCD maturity reminders (30d prior)', on: false },

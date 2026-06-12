@@ -8,7 +8,7 @@ import { companies } from '../data/companies';
 
 const navItems = [
   { to: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/app/portfolio-score', icon: TrendingUp, label: 'Portfolio Score' },
+  { to: '/app/portfolio-score', icon: TrendingUp, label: 'Portfolio Fundamental Score' },
   { to: '/app/watchlist', icon: Star, label: 'Watchlist' },
   { to: '/app/reports', icon: FileText, label: 'Reports' },
   { to: '/app/alerts', icon: Bell, label: 'Alerts' },

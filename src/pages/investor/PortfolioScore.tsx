@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ScoreRing } from '../../components/ScoreRing';
+import { ScoreGauge } from '../../components/ScoreGauge';
 import { portfolioHoldings } from '../../data/portfolio';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -27,15 +28,15 @@ export const PortfolioScore: React.FC = () => {
 
   const barData = portfolioHoldings.map(h => ({
     name: h.companyName.split(' ')[0],
-    score: h.healthScore,
+    score: h.healthScore * 5,
     fill: h.healthScore >= 70 ? '#34D399' : h.healthScore >= 55 ? '#FBBF24' : '#FB7185',
   }));
 
   return (
     <div className="p-6 page-fade max-w-7xl mx-auto">
       <div className="mb-7">
-        <h1 className="text-xl font-semibold text-primary-text">Portfolio Score</h1>
-        <p className="text-sm text-muted-text mt-0.5">Aggregate health and factor-level breakdown across your holdings</p>
+        <h1 className="text-xl font-semibold text-primary-text">Portfolio Fundamental Score</h1>
+        <p className="text-sm text-muted-text mt-0.5">Aggregate Fundamental Score and factor-level breakdown across your holdings</p>
       </div>
 
       {/* Top row */}
@@ -43,21 +44,21 @@ export const PortfolioScore: React.FC = () => {
         {/* Avg ring */}
         <div className="glass-card p-6 flex flex-col items-center justify-center">
           <p className="text-xs text-muted-text uppercase tracking-wider mb-4">Portfolio Average</p>
-          <ScoreRing score={avgScore} size={120} strokeWidth={10} />
+          <ScoreGauge score={avgScore * 5} pct={avgScore} caption="Portfolio Fundamental Score" />
           <p className="text-sm text-muted-text mt-4 text-center">Based on {portfolioHoldings.length} holdings.<br />Weighted equally.</p>
         </div>
 
         {/* Score bar chart */}
         <div className="lg:col-span-2 glass-card p-6">
-          <h3 className="font-semibold text-primary-text mb-5">Health Scores by Issuer</h3>
+          <h3 className="font-semibold text-primary-text mb-5">Fundamental Scores by Issuer</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={barData} barSize={36}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
               <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 500]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, background: 'rgba(18,42,44,0.95)', color: '#E9F3F1' }}
-                formatter={(v: number) => [`${v}/100`, 'Health Score']}
+                formatter={(v: number) => [`${v}/500`, 'Fundamental Score']}
               />
               <Bar dataKey="score" radius={[4, 4, 0, 0]}>
                 {barData.map((entry, index) => (

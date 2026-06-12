@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, AlertCircle, Plus, Settings2 } from 'lucide-react';
 import { ScoreRing } from '../../components/ScoreRing';
 import { Sparkline } from '../../components/Sparkline';
+import { PortfolioFundamentalScore } from '../../components/PortfolioFundamentalScore';
 import { portfolioHoldings } from '../../data/portfolio';
 
 const recColor = (r: string): React.CSSProperties =>
@@ -10,7 +11,7 @@ const recColor = (r: string): React.CSSProperties =>
   r === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
   { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
 
-const ALL_COLS = ['Health Score', 'Trend', 'Rating', 'GNPA', 'Total CAR', 'Recommendation', 'Alerts'];
+const ALL_COLS = ['Fundamental Score', 'Trend', 'Rating', 'GNPA', 'Total CAR', 'Recommendation', 'Alerts'];
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -39,13 +40,16 @@ export const Dashboard: React.FC = () => {
         </button>
       </div>
 
+      {/* Portfolio Fundamental Score hero */}
+      <PortfolioFundamentalScore holdings={portfolioHoldings} />
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
         <div className="glass-card-elevated p-5 flex items-center gap-4">
           <ScoreRing score={avgScore} size={60} strokeWidth={5} />
           <div>
-            <p className="text-xs text-muted-text">Avg Portfolio Score</p>
-            <p className="font-mono-nums text-lg font-bold text-primary-text mt-0.5">{avgScore}/100</p>
+            <p className="text-xs text-muted-text">Avg Fundamental Score</p>
+            <p className="font-mono-nums text-lg font-bold text-primary-text mt-0.5">{avgScore * 5}<span className="text-xs text-muted-text font-normal">/500</span></p>
           </div>
         </div>
         <div className="glass-card-elevated p-5">
@@ -108,7 +112,7 @@ export const Dashboard: React.FC = () => {
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
                 <th className="text-left px-5 py-3 text-xs font-medium text-muted-text">Issuer</th>
-                {visibleCols.has('Health Score') && <th className="text-center px-4 py-3 text-xs font-medium text-muted-text">Score</th>}
+                {visibleCols.has('Fundamental Score') && <th className="text-center px-4 py-3 text-xs font-medium text-muted-text">Score</th>}
                 {visibleCols.has('Trend') && <th className="text-center px-4 py-3 text-xs font-medium text-muted-text">Trend (12m)</th>}
                 {visibleCols.has('Rating') && <th className="text-left px-4 py-3 text-xs font-medium text-muted-text">Ext. Rating</th>}
                 {visibleCols.has('GNPA') && <th className="text-right px-4 py-3 text-xs font-medium text-muted-text">GNPA</th>}
@@ -133,14 +137,14 @@ export const Dashboard: React.FC = () => {
                       <p className="font-medium text-primary-text">{h.companyName}</p>
                       <p className="text-xs text-muted-text mt-0.5">{h.sector}</p>
                     </td>
-                    {visibleCols.has('Health Score') && (
+                    {visibleCols.has('Fundamental Score') && (
                       <td className="px-4 py-4 text-center">
                         <div className="inline-flex flex-col items-center gap-1">
                           <span className="font-mono-nums font-bold text-[15px]" style={{ color: h.healthScore >= 70 ? '#34D399' : h.healthScore >= 55 ? '#FBBF24' : '#FB7185' }}>
-                            {h.healthScore}
+                            {h.healthScore * 5}<span className="text-[10px] text-muted-text font-normal">/500</span>
                           </span>
                           <span className="text-[10px] font-medium" style={{ color: delta > 0 ? '#34D399' : delta < 0 ? '#FB7185' : '#9CB3B1' }}>
-                            {delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '—'}
+                            {h.healthScore}% · {delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '—'}
                           </span>
                         </div>
                       </td>

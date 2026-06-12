@@ -7,16 +7,14 @@ import {
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
   Newspaper, FileText, Globe, Table, Bot,
 } from 'lucide-react';
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Area, AreaChart,
-} from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
 import { GradeBadge, gradeBarColor } from '../../../components/GradeBadge';
 import { MetricCard } from '../../../components/MetricCard';
 import { YieldGauge } from '../../../components/YieldGauge';
 import { PeerYieldRange } from '../../../components/PeerYieldRange';
 import { CovenantTable } from '../../../components/CovenantTable';
+import { FundamentalScore } from '../../../components/FundamentalScore';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
 import type { CompanyReport } from '../../../data/reports';
@@ -34,44 +32,6 @@ const latest = (sec: FinancialSection | undefined, label: string): string => {
   if (!m) return '—';
   const v = [...m.values].reverse().find(x => x.value !== null);
   return v && v.value !== null ? `${v.value.toLocaleString()}${m.unit === '%' ? '%' : m.unit === 'x' ? 'x' : ''}` : '—';
-};
-
-// ── Health Score Chart bits ──────────────────────────────────────────────────
-
-const CustomDot = (props: { cx?: number; cy?: number; payload?: { event?: { direction: 'up' | 'down' } } }) => {
-  const { cx = 0, cy = 0, payload } = props;
-  if (!payload?.event) return <circle cx={cx} cy={cy} r={3} fill="#2DD4BF" />;
-  const color = payload.event.direction === 'up' ? '#34D399' : '#FB7185';
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.2} />
-      <circle cx={cx} cy={cy} r={4} fill={color} />
-    </g>
-  );
-};
-
-const CustomTooltip = ({ active, payload }: {
-  active?: boolean;
-  payload?: Array<{ payload: { month: string; score: number; event?: { direction: string; reason: string } } }>;
-}) => {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div className="rounded-xl p-4 max-w-xs" style={{ background: 'rgba(15,35,38,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
-      <p className="font-medium text-primary-text text-sm">{d.month}</p>
-      <p className="font-mono-nums font-bold text-lg" style={{ color: d.score >= 70 ? '#34D399' : d.score >= 55 ? '#FBBF24' : '#FB7185' }}>
-        {d.score}/100
-      </p>
-      {d.event && (
-        <div className="mt-2 pt-2 flex gap-2 items-start" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <span style={{ color: d.event.direction === 'up' ? '#34D399' : '#FB7185' }} className="text-lg">
-            {d.event.direction === 'up' ? '↑' : '↓'}
-          </span>
-          <p className="text-xs text-muted-text leading-relaxed">{d.event.reason}</p>
-        </div>
-      )}
-    </div>
-  );
 };
 
 // ── Scorecard pillar row ──────────────────────────────────────────────────────
@@ -128,30 +88,6 @@ const PillarRow: React.FC<{
     </div>
   );
 };
-
-// ── Scoring heatmap ────────────────────────────────────────────────────────────
-
-const Heatmap: React.FC<{ scorecard: ScorecardPillar[] }> = ({ scorecard }) => (
-  <div className="space-y-2">
-    {scorecard.map(p => (
-      <div key={p.name} className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-muted-text w-full sm:w-44 shrink-0 truncate">{p.name}</span>
-        <div className="flex gap-1 flex-wrap">
-          {p.factors.map(f => (
-            <div
-              key={f.name}
-              title={`${f.name}: ${f.grade} ${f.pct}%`}
-              className="w-8 h-8 rounded flex items-center justify-center text-[10px] font-mono-nums font-semibold"
-              style={{ background: `${gradeBarColor(f.grade)}26`, color: gradeBarColor(f.grade), border: `1px solid ${gradeBarColor(f.grade)}40` }}
-            >
-              {f.pct}
-            </div>
-          ))}
-        </div>
-      </div>
-    ))}
-  </div>
-);
 
 // ── Financial panel ─────────────────────────────────────────────────────────────
 
@@ -380,6 +316,9 @@ export const CompanyPage: React.FC = () => {
             {/* ── OVERVIEW ── */}
             {section === 'overview' && (
               <div>
+                {/* Fundamental Score hero */}
+                <FundamentalScore report={report} />
+
                 <h2 className="text-base font-semibold text-primary-text mb-5">Overview</h2>
 
                 {/* KPI cards (latest from financials) */}
@@ -414,33 +353,6 @@ export const CompanyPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Health score chart */}
-                <div className="glass-card p-5 mb-6">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="font-semibold text-primary-text text-sm">Health Score — 12-Month Trend</h3>
-                    <div className="flex items-center gap-3 text-xs text-muted-text">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#34D399' }} /> Improvement</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#FB7185' }} /> Decline</span>
-                    </div>
-                  </div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={report.healthScoreSeries} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
-                      <defs>
-                        <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#2DD4BF" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#2DD4BF" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.07)" vertical={false} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[50, 75]} tick={{ fontSize: 11, fill: '#9CB3B1' }} axisLine={false} tickLine={false} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area type="monotone" dataKey="score" stroke="#2DD4BF" strokeWidth={2} fill="url(#scoreGrad)" dot={(props) => { const { key, ...rest } = props as { key?: string }; return <CustomDot key={key} {...rest} />; }} activeDot={{ r: 6, fill: '#2DD4BF' }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                  <p className="text-[11px] text-muted-text mt-2">Hover data points with arrows to see the reason for a score change.</p>
-                </div>
-
                 {/* Yield gauge */}
                 <div className="mb-6">
                   <h3 className="font-semibold text-primary-text text-sm mb-3">Yield Overview</h3>
@@ -457,35 +369,35 @@ export const CompanyPage: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Rating scale + heatmap */}
-                <div className="grid lg:grid-cols-2 gap-5 mb-6">
-                  <div className="glass-card p-5">
-                    <h3 className="font-semibold text-primary-text text-sm mb-4">Rating Scale</h3>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                          <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Dimension</th>
-                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Score</th>
-                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">%</th>
-                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Rating</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {report.ratingScale.map(r => (
+                {/* Rating scale */}
+                <div className="glass-card p-5 mb-6">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <h3 className="font-semibold text-primary-text text-sm">Rating Scale — component scores (×100)</h3>
+                    <span className="text-[11px] text-muted-text">Rating 1 = best … 10 = worst</span>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                        <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Dimension</th>
+                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Score</th>
+                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">%</th>
+                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Rating</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.ratingScale.map(r => {
+                        const [a, b] = r.actual.split('/').map(s => Math.round(parseFloat(s) * 100));
+                        return (
                           <tr key={r.dimension} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: r.dimension === 'Combined' ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
                             <td className="py-2.5 text-primary-text text-xs font-medium">{r.dimension}</td>
-                            <td className="py-2.5 text-right font-mono-nums text-muted-text text-xs">{r.actual}</td>
+                            <td className="py-2.5 text-right font-mono-nums text-muted-text text-xs">{a}/{b}</td>
                             <td className="py-2.5 text-right font-mono-nums text-primary-text text-xs">{r.pct}%</td>
                             <td className="py-2.5 text-right font-mono-nums font-semibold text-brand-teal text-xs">{r.ratingNumber}{r.ratingLabel ? ` (${r.ratingLabel})` : ''}</td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="glass-card p-5">
-                    <h3 className="font-semibold text-primary-text text-sm mb-4">Factor Heatmap</h3>
-                    <Heatmap scorecard={report.scorecard} />
-                  </div>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Ownership + product mix */}
@@ -866,7 +778,7 @@ export const CompanyPage: React.FC = () => {
                         { label: 'Headquarters', value: company.hq },
                         { label: 'External Rating', value: `${company.externalRating} (${company.ratingAgency}, ${company.ratingDate})` },
                         { label: 'Our Recommendation', value: company.recommendation },
-                        { label: 'Health Score', value: `${company.healthScore}/100` },
+                        { label: 'Fundamental Score', value: `${company.healthScore * 5}/500 · ${company.healthScore}% · Rating ${company.internalRating}` },
                         { label: 'Internal Rating', value: `${company.internalRating}/15` },
                         { label: 'Combined Score', value: company.combinedScore },
                         { label: 'GNPA (latest)', value: latest(report.financials.assetQuality, 'GNPA') },
