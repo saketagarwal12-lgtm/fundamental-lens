@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Search, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture } from 'lucide-react';
+import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Search, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture, Sparkles } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/app/portfolio-score', icon: TrendingUp, label: 'Portfolio Fundamental Score' },
   { to: '/app/watchlist', icon: Star, label: 'Watchlist' },
   { to: '/app/reports', icon: FileText, label: 'Reports' },
+  { to: '/app/assess', icon: Sparkles, label: 'Assess private co.' },
   { to: '/app/alerts', icon: Bell, label: 'Alerts' },
   { to: '/app/profile', icon: User, label: 'Profile' },
 ];

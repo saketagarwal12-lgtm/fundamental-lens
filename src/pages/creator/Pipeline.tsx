@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle2, Circle, AlertCircle, Clock, ChevronRight, X, Plus } from 'lucide-react';
 
-const STAGES = ['Documents', 'Capture', 'Model', 'Gaps', 'Score', 'Report', 'Review', 'Publish'];
+const STAGES = ['Data sources', 'Capture', 'Model', 'Gaps', 'Score', 'Report', 'Review', 'Publish'];
 
 type StageStatus = 'done' | 'active' | 'blocked' | 'pending';
 

@@ -5,7 +5,7 @@ import {
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
   Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
-  Newspaper, FileText, Globe, Table, Bot,
+  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
@@ -15,13 +15,16 @@ import { YieldGauge } from '../../../components/YieldGauge';
 import { PeerYieldRange } from '../../../components/PeerYieldRange';
 import { CovenantTable } from '../../../components/CovenantTable';
 import { FundamentalScore } from '../../../components/FundamentalScore';
+import { DataSourcesPanel } from '../../../components/DataSourcesPanel';
+import { SignalsFeed } from '../../../components/SignalsFeed';
+import { WeightageWhatIf } from '../../../components/WeightageWhatIf';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
 import type { CompanyReport } from '../../../data/reports';
 import type { ScorecardPillar, FinancialSection, ScorecardFactor } from '../../../data/krazybee';
 
 type Section =
-  | 'overview' | 'business' | 'financial' | 'peers' | 'external'
+  | 'overview' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
   | 'developments' | 'ncd' | 'sector' | 'summary' | 'ai';
 
 const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1', '#0EA5A0', '#60A5FA', '#F472B6', '#FACC15', '#94A3B8', '#22D3EE'];
@@ -213,6 +216,8 @@ export const CompanyPage: React.FC = () => {
 
   const navItems: { key: Section; label: string; icon: typeof LayoutGrid }[] = [
     { key: 'overview', label: 'Overview', icon: LayoutGrid },
+    { key: 'signals', label: 'Data & Signals', icon: Database },
+    { key: 'weightage', label: 'Adjust weightage', icon: SlidersHorizontal },
     { key: 'business', label: 'Business & Management', icon: Briefcase },
     { key: 'financial', label: 'Financial Analysis', icon: LineChartIcon },
     { key: 'peers', label: 'Peer Comparison', icon: Scale },
@@ -406,6 +411,23 @@ export const CompanyPage: React.FC = () => {
                   <Donut title="Product / AUM Mix" data={report.productMix} />
                 </div>
                 <p className="text-xs text-muted-text leading-relaxed mb-2">{report.ownershipNote}</p>
+              </div>
+            )}
+
+            {/* ── DATA & SIGNALS ── */}
+            {section === 'signals' && (
+              <div className="space-y-5">
+                <h2 className="t-h2 text-primary-text">Data &amp; Signals</h2>
+                <DataSourcesPanel sources={report.dataSources ?? []} />
+                <SignalsFeed signals={report.signals ?? []} />
+              </div>
+            )}
+
+            {/* ── ADJUST WEIGHTAGE ── */}
+            {section === 'weightage' && (
+              <div className="space-y-5">
+                <h2 className="t-h2 text-primary-text">Adjust weightage</h2>
+                <WeightageWhatIf report={report} />
               </div>
             )}
 

@@ -28,7 +28,7 @@ export interface ScaledScore {
 
 // Grade from a 0–100 percentage, used to colour gauge segments / arcs.
 export const gradeForPct = (pct: number): Grade =>
-  pct >= 80 ? 'Extremely Strong' : pct >= 65 ? 'Strong' : pct >= 50 ? 'Moderate' : 'Weak';
+  pct >= 80 ? 'Extremely Strong' : pct >= 60 ? 'Strong' : pct >= 40 ? 'Moderate' : 'Weak';
 
 export const scoreBand = (pct: number): 'Strong' | 'Adequate' | 'Weak' =>
   pct >= 70 ? 'Strong' : pct >= 55 ? 'Adequate' : 'Weak';

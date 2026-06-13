@@ -16,11 +16,27 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
     p => p.name === 'Business & Management' || p.name === 'Financial Analysis',
   );
 
+  const listing = report.listing;
+  const listed = !!listing?.listed;
+  const badge = listed && listing
+    ? `Listed · ${listing.exchanges ?? ''}${listing.ticker ? ` · ${listing.ticker}` : ''}`
+    : undefined;
+
   return (
     <section className="mb-8" aria-label="Fundamental Score">
-      {/* Row 1 — full-width trend */}
+      {/* Row 1 — full-width trend (with share-price overlay for listed entities) */}
       <div className="mb-5">
-        <ScoreTrend data={trend} title="Fundamental Score — 12-month trend" max={issuer.max} height={280} />
+        <ScoreTrend
+          data={trend}
+          title="Fundamental Score — 12-month trend"
+          max={issuer.max}
+          height={280}
+          price={listed ? report.priceSeries : undefined}
+          badge={badge}
+        />
+        {!listed && listing?.note && (
+          <p className="t-caption mt-1.5 px-1">{listing.note}</p>
+        )}
       </div>
 
       {/* Row 2 — gauge · factor assessment · total score */}

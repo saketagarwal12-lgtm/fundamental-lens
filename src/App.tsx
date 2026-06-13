@@ -11,6 +11,7 @@ import { Reports } from './pages/investor/Reports';
 import { Alerts } from './pages/investor/Alerts';
 import { UserProfile } from './pages/investor/UserProfile';
 import { CompanyPage } from './pages/investor/company/CompanyPage';
+import { PrivateAssessment } from './pages/PrivateAssessment';
 import { Pipeline } from './pages/creator/Pipeline';
 import { Coverage } from './pages/creator/Coverage';
 import { SectorModels } from './pages/creator/SectorModels';
@@ -50,6 +51,7 @@ function AppRoutes() {
           <Route path="reports" element={<Reports />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="profile" element={<UserProfile />} />
+          <Route path="assess" element={<PrivateAssessment />} />
           <Route path="company/:id" element={<CompanyPage />} />
         </Route>
 
@@ -66,6 +68,7 @@ function AppRoutes() {
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="coverage" element={<Coverage />} />
           <Route path="sector-models" element={<SectorModels />} />
+          <Route path="assess" element={<PrivateAssessment />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

@@ -107,6 +107,33 @@ export interface LtvBucket { bucket: string; pct: number; }
 export interface SegmentAssetQuality { segment: string; gnpa: number; nnpa: number; }
 export interface CollectionEffPoint { period: string; value: number; }
 
+export interface Listing {
+  listed: boolean;
+  exchanges?: string;   // 'NSE / BSE'
+  ticker?: string;      // 'SPANDANA'
+  note?: string;        // shown when not listed
+}
+// Monthly illustrative mock share price (₹), aligned to the 12-month trend months.
+export interface PricePoint { month: string; price: number; }
+
+// ── Real-time data layer (mock connectors + signals) ─────────────────────────
+export interface DataSource {
+  label: string;
+  cadence: string;        // 'Quarterly' | 'Real-time' | 'Monthly' | 'Partner feed'
+  lastUpdated: string;    // 'as of 3Q FY26', "12 Jun 2026", …
+  status: 'Connected' | 'Mock';
+}
+export type SignalType =
+  | 'Debt raised' | 'Default / delay' | 'Auditor change' | 'Management change'
+  | 'Shareholding change' | 'Litigation' | 'Regulatory penalty' | 'News';
+export interface Signal {
+  date: string;
+  type: SignalType;
+  source: string;
+  impact: 'up' | 'down' | 'neutral';
+  text: string;
+}
+
 export interface CompanyReport {
   id: string;
   subSectorKey: 'unsecured-pl' | 'mfi' | 'gold';
@@ -137,6 +164,10 @@ export interface CompanyReport {
   ltvBuckets?: LtvBucket[];
   segmentAssetQuality?: SegmentAssetQuality[];
   collectionEfficiency?: CollectionEffPoint[];
+  listing?: Listing;
+  priceSeries?: PricePoint[];   // illustrative mock — wire a real feed at go-live
+  dataSources?: DataSource[];
+  signals?: Signal[];
 }
 
 // ── Shared sector-outlook prose ──────────────────────────────────────────────
@@ -896,6 +927,63 @@ const spandana: CompanyReport = {
   ],
 };
 
+// ── Listing / price / data-sources / signals (attached below) ────────────────
+
+const LISTINGS: Record<string, Listing> = {
+  krazybee: { listed: false, note: 'IPO expected — not yet listed.' },
+  avanti: { listed: false, note: 'Unlisted — market price unavailable.' },
+  keertana: { listed: false, note: 'Unlisted — market price unavailable.' },
+  spandana: { listed: true, exchanges: 'NSE / BSE', ticker: 'SPANDANA' },
+};
+
+// Illustrative mock share price (₹) — wire a real feed at go-live.
+const PRICE_SERIES: Record<string, PricePoint[]> = {
+  spandana: [
+    { month: "Jun'25", price: 365 }, { month: "Jul'25", price: 352 }, { month: "Aug'25", price: 338 },
+    { month: "Sep'25", price: 298 }, { month: "Oct'25", price: 305 }, { month: "Nov'25", price: 332 },
+    { month: "Dec'25", price: 348 }, { month: "Jan'26", price: 356 }, { month: "Feb'26", price: 349 },
+    { month: "Mar'26", price: 360 }, { month: "Apr'26", price: 368 }, { month: "May'26", price: 374 },
+  ],
+};
+
+const dataSourcesFor = (subSectorKey: CompanyReport['subSectorKey']): DataSource[] => [
+  { label: 'Financials', cadence: 'Quarterly', lastUpdated: 'as of 3Q FY26', status: 'Mock' },
+  { label: 'Qualitative & news', cadence: 'Real-time', lastUpdated: '12 Jun 2026', status: 'Mock' },
+  { label: 'Sectoral trend', cadence: 'Monthly', lastUpdated: 'May 2026', status: 'Mock' },
+  { label: 'Debt & default — Commercial CIBIL (partner)', cadence: 'Partner feed', lastUpdated: '10 Jun 2026', status: 'Mock' },
+  { label: 'Shareholding & ownership — registry (partner)', cadence: 'Partner feed', lastUpdated: '08 Jun 2026', status: 'Mock' },
+  { label: `Litigation, regulatory & penalties — agency (${subSectorKey === 'gold' ? 'gold-NBFC' : 'NBFC'} desk)`, cadence: 'Partner feed', lastUpdated: '09 Jun 2026', status: 'Mock' },
+];
+
+const SIGNALS: Record<string, Signal[]> = {
+  krazybee: [
+    { date: 'Apr 2026', type: 'Debt raised', source: 'Company / registry', impact: 'up', text: 'Raised $280M Series E (~$1.5B valuation) — strengthens capital & funding profile.' },
+    { date: 'Apr 2026', type: 'Shareholding change', source: 'Registry (partner)', impact: 'up', text: 'New institutional investors added to the cap table post Series E.' },
+    { date: 'Feb 2026', type: 'News', source: 'Real-time news', impact: 'neutral', text: 'Board approves conversion to a public company ahead of a potential IPO.' },
+    { date: 'Dec 2025', type: 'News', source: 'Financials (3Q FY26)', impact: 'down', text: 'Leverage rose to 2.40x and Total CAR eased to 23.55% — Capitalization.' },
+    { date: 'Oct 2025', type: 'News', source: 'Financials', impact: 'up', text: 'Asset quality strengthened; GNPA eased toward ~2% — Asset Quality.' },
+    { date: 'Aug 2025', type: 'Auditor change', source: 'Registry (partner)', impact: 'down', text: 'Statutory auditor (Tattavam & Co.) resigned — Management & Governance.' },
+  ],
+  avanti: [
+    { date: 'Apr 2026', type: 'Debt raised', source: 'Company / registry', impact: 'up', text: '₹75 cr promoter (NRJN Trust) capital infusion lifted Total CAR to ~31%.' },
+    { date: 'Dec 2025', type: 'Default / delay', source: 'Commercial CIBIL (partner)', impact: 'down', text: 'Breached certain lender covenants; waiver obtained — refinancing sensitivity flagged.' },
+    { date: 'Sep 2025', type: 'Regulatory penalty', source: 'Crisil', impact: 'down', text: 'Crisil downgraded the rating BBB+ → BBB on asset-quality and earnings pressure.' },
+    { date: 'Aug 2025', type: 'News', source: 'Real-time news', impact: 'neutral', text: 'Microfinance sector stress persists; collection efficiencies under watch.' },
+  ],
+  keertana: [
+    { date: 'Mar 2026', type: 'News', source: 'Financials', impact: 'up', text: 'Gold-loan AUM ramped to ~91% of book (+36% YTD) as legacy MFI runs down.' },
+    { date: 'Dec 2025', type: 'News', source: 'Financials (3Q FY26)', impact: 'down', text: 'GNPA/NNPA rose to 1.38%/0.69% as non-gold book deteriorated — Asset Quality.' },
+    { date: 'Nov 2025', type: 'News', source: 'India Ratings', impact: 'up', text: 'India Ratings affirmed BBB+ (Stable) — scalable franchise + promoter support.' },
+    { date: 'Oct 2025', type: 'Litigation', source: 'Agency (partner)', impact: 'neutral', text: 'No material litigation or regulatory action on record this period.' },
+  ],
+  spandana: [
+    { date: 'Dec 2025', type: 'News', source: 'Financials (3Q FY26)', impact: 'up', text: 'Net collection efficiency improved to ~94%; GNPA eased to 4.20%.' },
+    { date: 'Nov 2025', type: 'Management change', source: 'Registry (partner)', impact: 'up', text: 'Venkatesh Krishnan appointed MD & CEO; ₹200 cr of a ₹400 cr rights issue received.' },
+    { date: 'Sep 2025', type: 'Regulatory penalty', source: 'India Ratings', impact: 'down', text: 'Downgraded A- → BBB+ (Negative) on FY25 asset-quality stress and losses.' },
+    { date: 'Apr 2025', type: 'Management change', source: 'Registry (partner)', impact: 'down', text: 'CEO Shalabh Saxena exited; interim leadership until Nov 2025.' },
+  ],
+};
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 export const reports: Record<string, CompanyReport> = {
@@ -904,6 +992,14 @@ export const reports: Record<string, CompanyReport> = {
   keertana,
   spandana,
 };
+
+// Attach mock real-time data layer to every report.
+Object.entries(reports).forEach(([id, r]) => {
+  r.listing = LISTINGS[id] ?? { listed: false, note: 'Unlisted — market price unavailable.' };
+  r.priceSeries = PRICE_SERIES[id];
+  r.dataSources = dataSourcesFor(r.subSectorKey);
+  r.signals = SIGNALS[id] ?? [];
+});
 
 export const getReport = (id?: string): CompanyReport | undefined =>
   id ? reports[id] : undefined;

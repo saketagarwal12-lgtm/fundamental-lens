@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { GitBranch, BookOpen, BarChart2, Settings, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture } from 'lucide-react';
+import { GitBranch, BookOpen, BarChart2, Settings, LogOut, RefreshCw, Menu, X, ChevronDown, ChevronsLeft, ChevronsRight, Aperture, Sparkles } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/creator/pipeline', icon: GitBranch, label: 'Pipeline' },
   { to: '/creator/coverage', icon: BookOpen, label: 'Coverage' },
   { to: '/creator/sector-models', icon: BarChart2, label: 'Sector Models' },
+  { to: '/creator/assess', icon: Sparkles, label: 'Assess private co.' },
   { to: '/creator/settings', icon: Settings, label: 'Settings' },
 ];
 

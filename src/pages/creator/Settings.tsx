@@ -103,10 +103,11 @@ export const Settings: React.FC = () => {
           </div>
           <div className="p-5 space-y-4">
             {[
-              { label: 'MCA21 API endpoint', value: 'api.mca.gov.in/v3', connected: true },
-              { label: 'CARE Ratings feed', value: 'ratings.careratings.com/api', connected: true },
-              { label: 'CRISIL Research', value: 'research.crisil.com/feed', connected: false },
-              { label: 'RBI DBIE', value: 'dbie.rbi.org.in/api', connected: true },
+              { label: 'MCA21 / registry — shareholding & ownership', value: 'partner.registry/api/v3', connected: true },
+              { label: 'Commercial CIBIL — debt & default', value: 'partner.commercial-cibil/feed', connected: true },
+              { label: 'Litigation / regulatory / penalties — agency', value: 'partner.agency/litigation', connected: false },
+              { label: 'Ratings agencies feed', value: 'partner.ratings/api', connected: true },
+              { label: 'Real-time news & qualitative', value: 'partner.news/stream', connected: true },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-4">
                 <div className="flex-1 min-w-0">
