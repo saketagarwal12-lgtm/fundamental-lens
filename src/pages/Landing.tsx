@@ -1,11 +1,80 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, BookOpen, Activity, Bot } from 'lucide-react';
+import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, BookOpen, Activity, Bot, Gauge, FileText, Database, Sparkles } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { Sparkline } from '../components/Sparkline';
 import { BRAND } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
+
+// ── Phase 6.2 — Product offerings ────────────────────────────────────────────
+const offerings = [
+  {
+    icon: Gauge, lead: true, upgraded: false,
+    name: 'Fundamental Score',
+    tagline: 'A real-time fundamental score for corporates',
+    body: "A CIBIL-style score for an issuer's fundamentals, kept current — not a once-a-year rating.",
+    chips: ['Quarterly financials', 'News-driven qualitative', 'Sectoral-trend signals', 'Debt & default (Commercial CIBIL, partner)', 'Corporate signals (management, ownership, litigation, penalties)', 'Real-time news', 'Score-movement graph with reasons', 'Adjustable factor weightage [Upgraded]'],
+  },
+  {
+    icon: FileText, lead: false, upgraded: false,
+    name: 'High-quality research papers',
+    tagline: 'Institutional-grade research you can read',
+    body: 'Company- and ISIN-specific research, written for investors.',
+    chips: ['Company reports', 'ISIN reports', 'Print-friendly'],
+  },
+  {
+    icon: Bot, lead: false, upgraded: false,
+    name: 'Interactive AI bot',
+    tagline: 'Ask anything about an entity',
+    body: 'Get a clear, sourced answer grounded in the report and the data.',
+    chips: ['Entity Q&A', 'Natural-language answers', 'Cites the data'],
+  },
+  {
+    icon: Database, lead: false, upgraded: false,
+    name: 'Financial & qualitative data platform',
+    tagline: 'Every number and narrative that matters',
+    body: 'The full financial and non-financial picture, scannable.',
+    chips: ['Capitalization', 'Profitability', 'Funding & liquidity', 'Asset-quality / working-capital', 'Key qualitative factors'],
+  },
+  {
+    icon: Sparkles, lead: false, upgraded: true,
+    name: 'Private-company assessment',
+    tagline: 'Assess unlisted companies via a guided AI relationship manager',
+    body: 'A conversational AI RM collects inputs and produces a draft fundamental assessment.',
+    chips: ['AI RM-led collection', 'Management Q&A', 'Structured capture', 'Assessment for private entities'],
+  },
+];
+
+// ── Phase 6.3 — Who it's for ─────────────────────────────────────────────────
+interface Audience { key: string; name: string; headline: string; sub: string; highlights: string[]; }
+const audienceGroups: { group: string; items: Audience[] }[] = [
+  {
+    group: 'Individuals',
+    items: [
+      { key: 'retail', name: 'Retail investors', headline: 'Research that finally speaks your language.', sub: 'Institutional-grade analysis distilled into one score and a plain-language report.', highlights: ['One Fundamental Score', 'Plain-language reports', 'Interactive AI bot'] },
+      { key: 'hni', name: 'HNIs', headline: 'An independent check on your fixed-income book.', sub: 'A second, unconflicted opinion on the issuers you hold, tracked over time.', highlights: ['Portfolio monitoring', '12-month score trend with reasons', 'Peer comparison'] },
+    ],
+  },
+  {
+    group: 'Institutions',
+    items: [
+      { key: 'family', name: 'Family offices', headline: 'Consolidated oversight, one lens.', sub: 'Monitor every bond & private-credit exposure through one framework with governance signals.', highlights: ['Holding-weighted portfolio score', 'Governance flags', 'Customisable dashboard'] },
+      { key: 'mf', name: 'Mutual funds', headline: 'Surveillance that augments your credit team.', sub: 'Continuous issuer monitoring & early-warning to corroborate internal views.', highlights: ['Issuer surveillance & alerts', 'Peer benchmarking', 'Data platform'] },
+      { key: 'aif', name: 'Alternative Investment Funds', headline: 'Diligence built for private credit.', sub: 'Deep diligence & covenant tracking for private-credit / venture-debt.', highlights: ['Covenants & breaches', 'Issuance-structure detail', 'Sector-specific asset quality'] },
+      { key: 'banks', name: 'Banks & NBFCs', headline: 'Know your counterparties.', sub: 'Independent assessment of counterparties, co-lending partners, treasury issuers.', highlights: ['Counterparty scoring', 'Funding & liquidity analysis', 'Rating history & developments'] },
+    ],
+  },
+  {
+    group: 'Platforms & advisors',
+    items: [
+      { key: 'obpp', name: 'Online Bond Platforms (OBPPs)', headline: 'Transparency your investors can trust.', sub: 'Surface scores & reports inside your marketplace.', highlights: ['Embeddable score & reports', 'ISIN-level research', 'Plain-language risk context'] },
+      { key: 'wealth', name: 'Wealth managers', headline: 'Defensible advice, every time.', sub: 'Client-ready research behind every recommendation.', highlights: ['Downloadable reports', '"Why this view" cards', 'Client portfolio monitoring'] },
+      { key: 'boutique', name: 'Boutique research firms', headline: 'Extend your coverage universe.', sub: 'Ready sector models + structured data to scale coverage.', highlights: ['Sector models (NBFC live)', 'Structured database', 'Research-creator workflow'] },
+    ],
+  },
+];
+const allAudiences = audienceGroups.flatMap(g => g.items);
 
 const previewComposition = [
   { label: 'Issuer', score: 134, max: 200, pct: 67, color: '#2DD4BF' },
@@ -54,6 +123,8 @@ export const Landing: React.FC = () => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+  const [audienceKey, setAudienceKey] = useState('retail');
+  const audience = allAudiences.find(a => a.key === audienceKey) ?? allAudiences[0];
 
   const handleEnter = (role: 'investor' | 'creator') => {
     login(role, name.trim() || undefined);
@@ -75,7 +146,8 @@ export const Landing: React.FC = () => {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Wordmark size="xl" />
           <div className="flex items-center gap-3">
-            <a href="#features" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">Features</a>
+            <a href="#offerings" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">What you get</a>
+            <a href="#who" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">Who it's for</a>
             <a href="#how-it-works" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">How it works</a>
             <button
               onClick={() => setShowModal(true)}
@@ -96,7 +168,7 @@ export const Landing: React.FC = () => {
               style={{ background: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.25)', color: '#2DD4BF' }}
             >
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#2DD4BF' }}></span>
-              Now covering 5 NBFC issuers · More launching soon
+              Now covering 4 NBFC issuers · More launching soon
             </div>
             <h1 className="font-serif text-3xl lg:text-[2.6rem] font-semibold text-primary-text leading-[1.15] mb-4 text-glow-teal">
               {BRAND.tagline}
@@ -149,13 +221,14 @@ export const Landing: React.FC = () => {
               <span className="px-2.5 py-1 rounded-md text-xs font-semibold shrink-0" style={{ background: 'rgba(52,211,153,0.15)', color: '#34D399' }}>Subscribe</span>
             </div>
 
-            {/* Score + sparkline */}
+            {/* Score + mini trend */}
             <div className="flex items-center gap-4 mb-4">
-              <ScoreGauge score={327} pct={65} rating={7} size={120} strokeWidth={10} caption="Fundamental Score" />
+              <ScoreGauge score={134} max={200} pct={67} size={120} strokeWidth={10} caption="Fundamental Score" />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-muted-text mb-1">12-month trend</p>
-                <Sparkline data={[310, 310, 305, 310, 315, 315, 310, 320, 320, 320, 335, 327]} />
-                <p className="text-[11px] text-muted-text mt-1 font-mono-nums">327 / 500 · 65% · Rating 7</p>
+                <p className="text-[11px] text-muted-text mb-1">Fundamental Score · 12-month trend</p>
+                <Sparkline data={[128, 128, 126, 128, 130, 130, 128, 132, 132, 132, 138, 134]} positive />
+                <p className="text-[11px] text-muted-text mt-1 font-mono-nums">134 / 200 · 67%</p>
+                <p className="text-[11px] text-muted-text mt-0.5 font-mono-nums">Total 327 / 500 · Rating 7</p>
               </div>
             </div>
 
@@ -200,8 +273,140 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-20" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
+      {/* Trust strip */}
+      <section className="max-w-6xl mx-auto px-6 -mt-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { v: '4', l: 'Issuers covered' },
+            { v: '3', l: 'NBFC sub-sectors' },
+            { v: '25', l: 'Factors assessed' },
+            { v: '0–500', l: 'Fundamental Score scale' },
+          ].map(s => (
+            <div key={s.l} className="rounded-2xl p-4 text-center" style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}>
+              <p className="t-metric text-2xl" style={{ color: '#2DD4BF' }}>{s.v}</p>
+              <p className="t-caption mt-0.5">{s.l}</p>
+            </div>
+          ))}
+        </div>
+        <p className="t-caption text-center mt-3">Scores are produced by a deterministic model and reviewed by a research analyst before publishing.</p>
+      </section>
+
+      {/* Product offerings (Phase 6.2) */}
+      <section id="offerings" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <p className="t-eyebrow mb-2">What you get</p>
+            <h2 className="t-h1 text-primary-text">Five ways Fundamental Lens works for you</h2>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-5 mb-5">
+            {offerings.filter(o => o.lead).map(o => (
+              <div key={o.name} className="glass-card-elevated p-6 lg:col-span-2">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
+                    <o.icon size={24} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="t-h3 text-primary-text">{o.name}</h3>
+                      <span className="t-caption" style={{ color: '#2DD4BF' }}>· {o.tagline}</span>
+                    </div>
+                    <p className="t-body text-muted-text mt-1.5">{o.body}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {o.chips.map(c => {
+                        const up = c.includes('[Upgraded]');
+                        return (
+                          <span key={c} className="text-[11px] font-medium px-2 py-1 rounded-full" style={up
+                            ? { background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }
+                            : { background: 'rgba(255,255,255,0.05)', color: '#9CB3B1', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            {c.replace(' [Upgraded]', '')}{up ? ' · Upgraded' : ''}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {offerings.filter(o => !o.lead).map(o => (
+              <div key={o.name} className="glass-card p-5 flex flex-col">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
+                  <o.icon size={20} />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="t-h3 text-primary-text">{o.name}</h3>
+                  {o.upgraded && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }}>Upgraded</span>}
+                </div>
+                <p className="t-caption mb-2" style={{ color: '#2DD4BF' }}>{o.tagline}</p>
+                <p className="t-body text-muted-text flex-1">{o.body}</p>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {o.chips.map(c => (
+                    <span key={c} className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#9CB3B1', border: '1px solid rgba(255,255,255,0.1)' }}>{c}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for (Phase 6.3) */}
+      <section id="who" className="py-20 lg:py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <p className="t-eyebrow mb-2">Who it's for</p>
+            <h2 className="t-h1 text-primary-text">Built for every kind of investor — and the platforms that serve them</h2>
+          </div>
+          <div className="grid lg:grid-cols-[320px_1fr] gap-6">
+            {/* Tabs */}
+            <div className="space-y-4" role="tablist" aria-label="Audiences">
+              {audienceGroups.map(g => (
+                <div key={g.group}>
+                  <p className="t-eyebrow mb-2">{g.group}</p>
+                  <div className="space-y-1">
+                    {g.items.map(a => {
+                      const on = a.key === audienceKey;
+                      return (
+                        <button
+                          key={a.key}
+                          role="tab"
+                          aria-selected={on}
+                          onClick={() => setAudienceKey(a.key)}
+                          className="w-full text-left px-3 py-2.5 rounded-lg t-label transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+                          style={on
+                            ? { background: 'rgba(45,212,191,0.12)', color: '#2DD4BF', boxShadow: 'inset 3px 0 0 #2DD4BF, 0 0 16px rgba(45,212,191,0.18)' }
+                            : { color: '#9CB3B1' }}
+                          onMouseEnter={e => { if (!on) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                          onMouseLeave={e => { if (!on) e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          {a.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Panel */}
+            <div className="glass-card-elevated p-7 flex flex-col justify-center" role="tabpanel">
+              <h3 className="t-h2 text-primary-text">{audience.headline}</h3>
+              <p className="t-lead mt-2 mb-5">{audience.sub}</p>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {audience.highlights.map(h => (
+                  <div key={h} className="rounded-xl p-3.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <span className="w-6 h-6 rounded-md flex items-center justify-center mb-2" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}><ChevronRight size={14} /></span>
+                    <p className="t-body text-primary-text">{h}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Key aspects */}
+      <section id="features" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">Everything you need to evaluate fixed-income credit</h2>
@@ -209,7 +414,7 @@ export const Landing: React.FC = () => {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map(f => (
-              <div key={f.title} className="glass-card p-6 transition-all duration-200">
+              <div key={f.title} className="glass-card p-6 h-full transition-all duration-200">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
                   <f.icon size={20} />
                 </div>
@@ -271,7 +476,7 @@ export const Landing: React.FC = () => {
       <div className="py-5 px-6" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(10,25,27,0.5)' }}>
         <div className="max-w-6xl mx-auto">
           <p className="text-[11px] text-faint-text leading-relaxed text-center">
-            Fundamental Lens provides research and information for educational purposes only and does not constitute personalised investment advice or a recommendation to buy, sell or hold any security. Investments in securities are subject to market risk; past performance does not guarantee future results. Health scores and assessments are model-generated and reviewed before publishing, but may contain errors and should not be the sole basis for any investment decision. Read all offer documents carefully and consult a qualified adviser before investing. [Entity name, SEBI/regulatory registration number and grievance-redressal details to be inserted.]
+            Fundamental Lens provides research and information for educational purposes only and does not constitute personalised investment advice or a recommendation to buy, sell or hold any security. Investments in securities are subject to market risk; past performance does not guarantee future results. Fundamental Scores and assessments are model-generated and reviewed before publishing, but may contain errors and should not be the sole basis for any investment decision. Read all offer documents carefully and consult a qualified adviser before investing. [Entity name, SEBI/regulatory registration number and grievance-redressal details to be inserted.]
           </p>
         </div>
       </div>
