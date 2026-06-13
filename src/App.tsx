@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { UIProvider } from './contexts/UIContext';
 import { Landing } from './pages/Landing';
 import { InvestorLayout } from './layouts/InvestorLayout';
 import { CreatorLayout } from './layouts/CreatorLayout';
@@ -81,9 +80,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <UIProvider>
-        <AppRoutes />
-      </UIProvider>
+      <AppRoutes />
     </AuthProvider>
   );
 }

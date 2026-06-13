@@ -180,8 +180,13 @@ export const CompanyPage: React.FC = () => {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [readingMode, setReadingMode] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(() => sessionStorage.getItem('fl-company-nav-collapsed') === '1');
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    const saved = sessionStorage.getItem('fl-company-nav-collapsed');
+    if (saved !== null) return saved === '1';
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
+  });
   const toggleNav = () => setNavCollapsed(v => { sessionStorage.setItem('fl-company-nav-collapsed', v ? '0' : '1'); return !v; });
+  const [finOpen, setFinOpen] = useState(false);
 
   const company = companies.find(c => c.id === id);
   const report: CompanyReport | undefined = getReport(id);
@@ -229,44 +234,92 @@ export const CompanyPage: React.FC = () => {
     { key: 'ai', label: 'Ask AI', icon: Bot },
   ];
 
+  // Financial Analysis sub-sections (Tier-2 hierarchy)
+  const finChildren: { tab: string; label: string }[] = [
+    { tab: 'capitalization', label: 'Capitalization' },
+    { tab: 'fundingLiquidity', label: 'Funding & liquidity' },
+    { tab: 'profitability', label: 'Profitability' },
+    { tab: 'assetQuality', label: 'Asset quality' },
+  ];
+
   const firstName = company.name.split(' ')[0];
   const subSectorLabel = report?.subSectorKey === 'gold' ? 'Gold-Loan' : report?.subSectorKey === 'mfi' ? 'Microfinance (MFI)' : 'Digital Unsecured PL';
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-full page-fade">
-      {/* Left nav rail */}
-      <aside className={`${navCollapsed ? 'lg:w-[60px]' : 'lg:w-52'} lg:shrink-0 border-b lg:border-b-0 lg:border-r transition-[width] duration-200 ease-out`}
-        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderColor: 'rgba(255,255,255,0.07)' }}>
-        <div className={`p-4 flex items-center ${navCollapsed ? 'lg:justify-center lg:px-0' : 'justify-between'}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={() => navigate('/app/dashboard')} title="Back to dashboard"
-            className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
-            <ArrowLeft size={13} /><span className={navCollapsed ? 'lg:hidden' : ''}>Back to dashboard</span>
-          </button>
-          <button onClick={toggleNav} aria-label={navCollapsed ? 'Expand' : 'Collapse'}
-            className={`hidden lg:flex items-center justify-center w-6 h-6 rounded text-muted-text hover:text-primary-text transition-colors ${navCollapsed ? 'lg:hidden' : ''}`}>
-            <ChevronsLeft size={14} />
-          </button>
-        </div>
-        <nav className="p-2 lg:py-4">
-          <div className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible pb-1 lg:pb-0">
-            {navItems.map(item => (
-              <button key={item.key}
-                onClick={() => { setSection(item.key); setActiveFactorName(null); }}
-                title={navCollapsed ? item.label : undefined}
-                className={`shrink-0 lg:w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-xs font-medium transition-colors ${navCollapsed ? 'lg:justify-center lg:px-0' : ''} ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
-                <item.icon size={15} className="shrink-0 hidden lg:block" />
-                <span className={navCollapsed ? 'lg:hidden' : ''}>{item.label}</span>
-              </button>
-            ))}
-          </div>
-          {navCollapsed && (
-            <button onClick={toggleNav} aria-label="Expand"
-              className="hidden lg:flex items-center justify-center w-full h-9 mt-2 rounded text-muted-text hover:text-primary-text transition-colors">
-              <ChevronsRight size={15} />
+    <div className="flex min-h-full page-fade">
+      {/* Tier 2 — single contextual section panel (off-canvas when collapsed) */}
+      <aside
+        className={`shrink-0 overflow-hidden transition-[width] duration-200 ease-out ${navCollapsed ? 'w-0' : 'w-60'}`}
+        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderRight: navCollapsed ? 'none' : '1px solid rgba(255,255,255,0.07)' }}
+        aria-hidden={navCollapsed}
+      >
+        <div className="w-60">
+          <div className="px-4 h-14 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <button onClick={() => navigate('/app/dashboard')}
+              className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
+              <ArrowLeft size={13} /> Back to dashboard
             </button>
-          )}
-        </nav>
+            <button onClick={toggleNav} aria-label="Hide sections"
+              className="flex items-center justify-center w-6 h-6 rounded text-muted-text hover:text-primary-text transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <ChevronsLeft size={15} />
+            </button>
+          </div>
+          <nav className="py-3 px-2 space-y-0.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 7rem)' }}>
+            {navItems.map(item => {
+              if (item.key === 'financial') {
+                const open = finOpen || section === 'financial';
+                return (
+                  <div key={item.key}>
+                    <button
+                      onClick={() => { setSection('financial'); setActiveFactorName(null); setFinOpen(o => !o); }}
+                      aria-expanded={open}
+                      className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${section === 'financial' ? 'nav-item-active' : 'nav-item-inactive'}`}
+                    >
+                      <item.icon size={15} className="shrink-0" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {open ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />}
+                    </button>
+                    {open && (
+                      <div className="ml-4 mt-0.5 space-y-0.5" style={{ borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
+                        {finChildren.map(ch => (
+                          <button key={ch.tab}
+                            onClick={() => { setSection('financial'); setFinancialTab(ch.tab); }}
+                            className={`w-full text-left pl-4 pr-3 py-1.5 rounded-md text-xs transition-colors ${section === 'financial' && financialTab === ch.tab ? 'text-brand-teal' : 'text-muted-text hover:text-primary-text'}`}
+                            style={section === 'financial' && financialTab === ch.tab ? { background: 'rgba(45,212,191,0.1)' } : {}}>
+                            {ch.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <button key={item.key}
+                  onClick={() => { setSection(item.key); setActiveFactorName(null); }}
+                  className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
+                  <item.icon size={15} className="shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </aside>
+
+      {/* Slim "show sections" affordance when collapsed */}
+      {navCollapsed && (
+        <button onClick={toggleNav} aria-label="Show sections"
+          className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 transition-colors"
+          style={{ background: 'rgba(10,25,27,0.7)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(10,25,27,0.7)')}>
+          <ChevronsRight size={15} className="text-brand-teal" />
+          <span className="text-[10px] text-muted-text tracking-wide" style={{ writingMode: 'vertical-rl' }}>Sections</span>
+        </button>
+      )}
 
       {/* Main content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
