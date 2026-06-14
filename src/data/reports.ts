@@ -30,6 +30,8 @@ export interface QualFactor {
   grade: Grade;
   pct: number;
   commentary: string;
+  quarterly?: string;
+  outlook?: string;
 }
 
 export interface OwnershipSlice { name: string; pct: number; }
@@ -186,10 +188,14 @@ const mk = (
   metrics: { label: string; unit: string; vals: (number | null)[] }[],
   periods: string[],
   commentary: string,
+  quarterly?: string,
+  outlook?: string,
 ): FinancialSection => ({
   grade,
   pct,
   commentary,
+  quarterly,
+  outlook,
   metrics: metrics.map(m => ({
     label: m.label,
     unit: m.unit,
@@ -214,6 +220,7 @@ const krazybee: CompanyReport = {
   financials: kbFinancials,
   qualitative: kbQual.map(q => ({
     factor: q.factor, pillar: q.pillar, grade: q.grade, pct: q.pct, commentary: q.commentary,
+    quarterly: (q as { quarterly?: string }).quarterly, outlook: (q as { outlook?: string }).outlook,
   })),
   ownership: kbOwnership,
   ownershipNote: 'No promoter holding; institutionally held by marquee PE/VC investors. Board and institutional quality is the key risk mitigant.',
@@ -993,12 +1000,42 @@ export const reports: Record<string, CompanyReport> = {
   spandana,
 };
 
-// Attach mock real-time data layer to every report.
+// Latest-quarter + outlook write-ups for the financial sections of the
+// secondary entities (KrazyBee's are authored inline in krazybee.ts).
+const FIN_NOTES: Record<string, Record<string, { quarterly: string; outlook: string }>> = {
+  avanti: {
+    capitalization: { quarterly: 'Post the ₹75 cr April 2026 promoter infusion, Total CAR rose to 31.05% and leverage fell to 1.86x; net worth was ₹292 cr in 3Q26.', outlook: 'Capital is now comfortable, but internal generation stays negative until earnings turn; continued promoter/DFI support underpins the buffer into FY27.' },
+    fundingLiquidity: { quarterly: "Total funding was ₹631 cr (Sep'25), split 55% term loans / 45% NCDs; LCR of 225.66% with no cumulative ALM shortfall within one year.", outlook: "Top-10 lender concentration of 50.5% is the structural vulnerability; the Dec'25 covenant-waiver episode underlined sensitivity to rating actions and refinancing." },
+    profitability: { quarterly: '3Q26 stayed loss-making (PAT -₹25.8 cr) with cost-to-income above 100% and credit cost normalising to ~10% from the FY25 spike.', outlook: 'A return to profitability depends on credit costs settling and AUM recovering operating leverage; break-even remains several quarters away.' },
+    assetQuality: { quarterly: 'GNPA improved sharply to 1.39% and NNPA to 0.53% by 3Q26 after FY25 write-offs; AUM contracted to ₹554 cr as the book de-risked.', outlook: 'Headline ratios are clean post clean-up, but the ~97% unsecured rural-MFI mix keeps the segment cyclically fragile.' },
+  },
+  keertana: {
+    capitalization: { quarterly: 'Net worth scaled to ₹771 cr by 3Q26 with Total CAR at 26.21%, though leverage edged up to 3.86x on rapid gold-book growth.', outlook: 'Capital is adequate for a secured lender; the rising-leverage, wholesale-funded trajectory is the item to watch as gold AUM compounds.' },
+    fundingLiquidity: { quarterly: 'Growth stayed wholesale-funded via term loans and NCDs; cash rose to ₹211 cr, still thin against the fast-growing balance sheet.', outlook: 'Short-tenor gold receivables are a natural liquidity offset; deepening funding access and lengthening tenor would de-risk the profile.' },
+    profitability: { quarterly: 'ROAA compressed to 1.43% in 3Q26 as legacy non-gold credit costs (cost of risk 5.79%) weighed, even as NIM improved to 12.19%.', outlook: 'As stressed non-gold books run off, credit costs should normalise and returns recover toward the clean gold-segment baseline.' },
+    assetQuality: { quarterly: 'Headline GNPA of 1.38% masks a clean gold book (0% NPAs) versus stressed microfinance (22.4%) and home/LAP (8.6%) segments being wound down.', outlook: 'The shift to ~91% gold structurally de-risks the portfolio; residual risk sits in the run-off non-gold exposures and AP geographic concentration.' },
+  },
+  spandana: {
+    capitalization: { quarterly: 'Total CAR was exceptional at 40.30% in 3Q26 with leverage down to 1.85x; the ₹400 cr rights issue (₹200 cr received) further bolstered capital.', outlook: 'Capital is a clear strength and absorbs further stress; rebuilding earnings to lift net worth is the path back to a higher score.' },
+    fundingLiquidity: { quarterly: 'Liquidity was best-in-class — CCE of ₹1,553 cr (~25% of assets, 52% of 12-month repayments) and an LCR of 424.46%.', outlook: 'Funding access tightened post-downgrade, scoring the funding factor low despite the stockpile; market re-access as asset quality stabilises is the swing factor.' },
+    profitability: { quarterly: '3Q26 losses narrowed to -₹95 cr as cost of risk normalised to 6.38% from the FY25 spike of 22.43%; NIM held at 12.71%.', outlook: "A return to profitability hinges on AUM stabilising and credit costs continuing to ease; the fresh book's performance is the leading indicator." },
+    assetQuality: { quarterly: 'GNPA stabilised at 4.20% by 3Q26 with the fresh book (58% of AUM) 99.8% current and collection efficiency recovering to ~94%.', outlook: 'The legacy overhang persists, but the trajectory is stabilisation; sustained ~95%+ collections would confirm the turn through FY27.' },
+  },
+};
+
+// Attach mock real-time data layer + write-ups to every report.
 Object.entries(reports).forEach(([id, r]) => {
   r.listing = LISTINGS[id] ?? { listed: false, note: 'Unlisted — market price unavailable.' };
   r.priceSeries = PRICE_SERIES[id];
   r.dataSources = dataSourcesFor(r.subSectorKey);
   r.signals = SIGNALS[id] ?? [];
+  const notes = FIN_NOTES[id];
+  if (notes) {
+    Object.entries(notes).forEach(([key, note]) => {
+      const sec = r.financials[key];
+      if (sec) { sec.quarterly = sec.quarterly ?? note.quarterly; sec.outlook = sec.outlook ?? note.outlook; }
+    });
+  }
 });
 
 export const getReport = (id?: string): CompanyReport | undefined =>

@@ -5,7 +5,7 @@ import {
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
   Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
-  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal,
+  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
@@ -18,13 +18,16 @@ import { FundamentalScore } from '../../../components/FundamentalScore';
 import { DataSourcesPanel } from '../../../components/DataSourcesPanel';
 import { SignalsFeed } from '../../../components/SignalsFeed';
 import { WeightageWhatIf } from '../../../components/WeightageWhatIf';
+import { ExpandableAnalysis } from '../../../components/ExpandableAnalysis';
+import { FactorHeatmap } from '../../../components/FactorHeatmap';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
+import { gradeForPct } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
-import type { ScorecardPillar, FinancialSection, ScorecardFactor } from '../../../data/krazybee';
+import type { FinancialSection } from '../../../data/krazybee';
 
 type Section =
-  | 'overview' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
+  | 'overview' | 'scorecard' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
   | 'developments' | 'ncd' | 'sector' | 'summary' | 'ai';
 
 const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1', '#0EA5A0', '#60A5FA', '#F472B6', '#FACC15', '#94A3B8', '#22D3EE'];
@@ -37,60 +40,6 @@ const latest = (sec: FinancialSection | undefined, label: string): string => {
   return v && v.value !== null ? `${v.value.toLocaleString()}${m.unit === '%' ? '%' : m.unit === 'x' ? 'x' : ''}` : '—';
 };
 
-// ── Scorecard pillar row ──────────────────────────────────────────────────────
-
-const PillarRow: React.FC<{
-  pillar: ScorecardPillar;
-  onFactorClick: (name: string) => void;
-  activeFactorName: string | null;
-}> = ({ pillar, onFactorClick, activeFactorName }) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-xl overflow-hidden mb-3" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-3 px-5 py-4 transition-colors"
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-      >
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-primary-text text-sm">{pillar.name}</span>
-            <GradeBadge grade={pillar.grade} compact />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-32 h-1.5 rounded-full overflow-hidden hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }}>
-            <div className="h-full rounded-full" style={{ width: `${pillar.pct}%`, backgroundColor: gradeBarColor(pillar.grade) }} />
-          </div>
-          <span className="font-mono-nums text-sm font-semibold w-9 text-right" style={{ color: gradeBarColor(pillar.grade) }}>{pillar.pct}%</span>
-          {open ? <ChevronDown size={15} className="text-muted-text" /> : <ChevronRight size={15} className="text-muted-text" />}
-        </div>
-      </button>
-      {open && (
-        <div className="border-t px-5 py-3 space-y-2" style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
-          {pillar.factors.map((f: ScorecardFactor) => (
-            <button
-              key={f.name}
-              onClick={() => onFactorClick(f.name)}
-              className="w-full flex items-center gap-3 py-2 px-2 rounded-lg transition-colors text-left"
-              style={activeFactorName === f.name ? { background: 'rgba(45,212,191,0.1)', border: '1px solid rgba(45,212,191,0.15)' } : { border: '1px solid transparent' }}
-              onMouseEnter={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-              onMouseLeave={e => { if (activeFactorName !== f.name) e.currentTarget.style.background = 'transparent'; }}
-            >
-              <span className="text-sm text-primary-text flex-1 min-w-0 truncate">{f.name}</span>
-              <GradeBadge grade={f.grade} compact />
-              <div className="w-20 h-1.5 rounded-full overflow-hidden hidden sm:block" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                <div className="h-full rounded-full" style={{ width: `${f.pct}%`, backgroundColor: gradeBarColor(f.grade) }} />
-              </div>
-              <span className="font-mono-nums text-xs font-medium w-8 text-right" style={{ color: gradeBarColor(f.grade) }}>{f.pct}%</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 // ── Financial panel ─────────────────────────────────────────────────────────────
 
@@ -101,7 +50,6 @@ const FinancialPanel: React.FC<{ sec: FinancialSection | undefined }> = ({ sec }
     <div>
       <div className="flex items-center gap-3 mb-5">
         <GradeBadge grade={sec.grade} />
-        <span className="font-mono-nums text-sm font-semibold text-muted-text">{sec.pct}%</span>
       </div>
       <div className="overflow-x-auto rounded-xl mb-5" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
         <table className="w-full text-sm">
@@ -132,7 +80,7 @@ const FinancialPanel: React.FC<{ sec: FinancialSection | undefined }> = ({ sec }
       </div>
       <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
         <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Commentary</p>
-        <p className="text-sm text-primary-text font-serif leading-relaxed">{sec.commentary}</p>
+        <ExpandableAnalysis commentary={sec.commentary} quarterly={sec.quarterly} outlook={sec.outlook} />
       </div>
     </div>
   );
@@ -221,6 +169,7 @@ export const CompanyPage: React.FC = () => {
 
   const navItems: { key: Section; label: string; icon: typeof LayoutGrid }[] = [
     { key: 'overview', label: 'Overview', icon: LayoutGrid },
+    { key: 'scorecard', label: 'Scorecard', icon: Grid3x3 },
     { key: 'signals', label: 'Data & Signals', icon: Database },
     { key: 'weightage', label: 'Adjust weightage', icon: SlidersHorizontal },
     { key: 'business', label: 'Business & Management', icon: Briefcase },
@@ -411,59 +360,106 @@ export const CompanyPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Yield gauge */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-primary-text text-sm mb-3">Yield Overview</h3>
-                  <YieldGauge data={report.yieldOverview} />
-                </div>
-
-                {/* Scorecard */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-primary-text text-sm mb-4">Fundamental Scorecard</h3>
-                  {report.scorecard.map(p => (
-                    <PillarRow key={p.name} pillar={p}
-                      onFactorClick={name => { setActiveFactorName(activeFactorName === name ? null : name); setSection('business'); }}
-                      activeFactorName={activeFactorName} />
-                  ))}
-                </div>
-
-                {/* Rating scale */}
-                <div className="glass-card p-5 mb-6">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <h3 className="font-semibold text-primary-text text-sm">Rating Scale — component scores (×100)</h3>
-                    <span className="text-[11px] text-muted-text">Rating 1 = best … 10 = worst</span>
-                  </div>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                        <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Dimension</th>
-                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Score</th>
-                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">%</th>
-                        <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.ratingScale.map(r => {
-                        const [a, b] = r.actual.split('/').map(s => Math.round(parseFloat(s) * 100));
-                        return (
-                          <tr key={r.dimension} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: r.dimension === 'Combined' ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
-                            <td className="py-2.5 text-primary-text text-xs font-medium">{r.dimension}</td>
-                            <td className="py-2.5 text-right font-mono-nums text-muted-text text-xs">{a}/{b}</td>
-                            <td className="py-2.5 text-right font-mono-nums text-primary-text text-xs">{r.pct}%</td>
-                            <td className="py-2.5 text-right font-mono-nums font-semibold text-brand-teal text-xs">{r.ratingNumber}{r.ratingLabel ? ` (${r.ratingLabel})` : ''}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
                 {/* Ownership + product mix */}
                 <div className="grid sm:grid-cols-2 gap-5 mb-3">
                   <Donut title="Ownership Structure" data={report.ownership} limit={5} />
                   <Donut title="Product / AUM Mix" data={report.productMix} />
                 </div>
-                <p className="text-xs text-muted-text leading-relaxed mb-2">{report.ownershipNote}</p>
+                <p className="text-xs text-muted-text leading-relaxed mb-7">{report.ownershipNote}</p>
+
+                {/* Yield Overview — last */}
+                <div>
+                  <h3 className="t-h3 text-primary-text mb-3">Yield Overview</h3>
+                  <YieldGauge data={report.yieldOverview} />
+                </div>
+              </div>
+            )}
+
+            {/* ── SCORECARD ── */}
+            {section === 'scorecard' && (
+              <div className="space-y-5">
+                <h2 className="t-h2 text-primary-text">Scorecard</h2>
+
+                {/* Rating scale */}
+                <div className="glass-card p-5">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <h3 className="t-h3 text-primary-text">Rating Scale</h3>
+                    <span className="t-caption">Rating 1 = best … 10 = worst</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                          <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Dimension</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Score (×100)</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">%</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">Rating</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {report.ratingScale.map(r => {
+                          const [a, b] = r.actual.split('/').map(s => Math.round(parseFloat(s) * 100));
+                          return (
+                            <tr key={r.dimension} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: r.dimension === 'Combined' ? 'rgba(45,212,191,0.06)' : 'transparent' }}>
+                              <td className="py-2.5 text-primary-text text-xs font-medium">{r.dimension}</td>
+                              <td className="py-2.5 text-right font-mono-nums text-muted-text text-xs">{a}/{b}</td>
+                              <td className="py-2.5 text-right font-mono-nums text-primary-text text-xs">{r.pct}%</td>
+                              <td className="py-2.5 text-right font-mono-nums font-semibold text-brand-teal text-xs">{r.ratingNumber}{r.ratingLabel ? ` (${r.ratingLabel})` : ''}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Rating-number reference */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    {[
+                      { r: '1–2', g: 'Extremely Strong', c: '#34D399' },
+                      { r: '3–4', g: 'Strong', c: '#2DD4BF' },
+                      { r: '5–7', g: 'Moderate', c: '#FBBF24' },
+                      { r: '8–10', g: 'Weak', c: '#FB7185' },
+                    ].map(x => (
+                      <span key={x.r} className="inline-flex items-center gap-1.5 t-caption">
+                        <span className="w-2.5 h-2.5 rounded-sm" style={{ background: `${x.c}33`, border: `1px solid ${x.c}` }} />
+                        Rating {x.r} · {x.g}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scoring heatmap — hierarchical */}
+                <div className="glass-card p-5">
+                  <h3 className="t-h3 text-primary-text mb-4">Scoring Heatmap</h3>
+                  {/* Issuer group → its two pillars */}
+                  <div className="mb-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="t-eyebrow" style={{ color: '#2DD4BF' }}>Issuer (Fundamental)</span>
+                      <span className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                    </div>
+                    <div className="space-y-4">
+                      {report.scorecard.filter(p => p.name === 'Business & Management' || p.name === 'Financial Analysis').map(p => (
+                        <div key={p.name}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="t-label text-primary-text">{p.name}</span>
+                            <GradeBadge grade={gradeForPct(p.pct)} compact />
+                          </div>
+                          <FactorHeatmap factors={p.factors} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Other components */}
+                  {report.scorecard.filter(p => !['Business & Management', 'Financial Analysis'].includes(p.name)).map(p => (
+                    <div key={p.name} className="mb-5 last:mb-0">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="t-eyebrow" style={{ color: '#2DD4BF' }}>{p.name}</span>
+                        <GradeBadge grade={gradeForPct(p.pct)} compact />
+                        <span className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
+                      </div>
+                      <FactorHeatmap factors={p.factors} />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -500,19 +496,13 @@ export const CompanyPage: React.FC = () => {
                     <div key={m.factor} className="glass-card p-5"
                       style={activeFactorName === m.factor ? { borderColor: 'rgba(45,212,191,0.3)', boxShadow: '0 0 0 1px rgba(45,212,191,0.15), 0 12px 34px rgba(0,0,0,0.38)' } : {}}>
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
-                        <h3 className="font-semibold text-primary-text">{m.factor}</h3>
-                        <GradeBadge grade={m.grade} />
-                        <span className="font-mono-nums text-sm text-muted-text">{m.pct}%</span>
+                        <h3 className="t-h3 text-primary-text">{m.factor}</h3>
+                        <GradeBadge grade={gradeForPct(m.pct)} />
                       </div>
                       <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(m.grade) }} />
+                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(gradeForPct(m.pct)) }} />
                       </div>
-                      <p className="text-sm leading-relaxed"
-                        style={readingMode
-                          ? { background: 'rgba(245,240,230,0.95)', color: '#1a1a1a', borderRadius: '12px', padding: '1rem', fontFamily: 'Newsreader, Georgia, serif' }
-                          : { color: '#E9F3F1', fontFamily: 'Newsreader, Georgia, serif' }}>
-                        {m.commentary}
-                      </p>
+                      <ExpandableAnalysis commentary={m.commentary} quarterly={m.quarterly} outlook={m.outlook} readingMode={readingMode} />
                     </div>
                   ))}
                 </div>

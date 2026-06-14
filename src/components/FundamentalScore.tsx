@@ -2,7 +2,8 @@ import { ScoreGauge } from './ScoreGauge';
 import { ScoreTrend } from './ScoreTrend';
 import { ScoreComposition } from './ScoreComposition';
 import { FactorAssessment } from './FactorAssessment';
-import { getScaledScore, getIssuerTrend } from '../data/score';
+import { gradeBarColor } from './GradeBadge';
+import { getScaledScore, getIssuerTrend, gradeForPct } from '../data/score';
 import type { CompanyReport } from '../data/reports';
 
 // Entity-level hero: Fundamental (Issuer /200) gauge + trend + factor assessment,
@@ -21,6 +22,9 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
   const badge = listed && listing
     ? `Listed · ${listing.exchanges ?? ''}${listing.ticker ? ` · ${listing.ticker}` : ''}`
     : undefined;
+
+  const issuerGrade = gradeForPct(issuer.pct);
+  const latestPeriod = trend.length ? trend[trend.length - 1].month : '';
 
   return (
     <section className="mb-8" aria-label="Fundamental Score">
@@ -41,8 +45,12 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
 
       {/* Row 2 — gauge · factor assessment · total score */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,28fr)_minmax(0,36fr)_minmax(0,36fr)] gap-5 items-stretch">
-        <div className="glass-card-elevated p-5 flex items-center justify-center">
+        <div className="glass-card-elevated p-5 flex flex-col items-center justify-center text-center">
           <ScoreGauge score={issuer.score} max={issuer.max} pct={issuer.pct} caption="Fundamental Score" />
+          <div className="mt-4 pt-4 w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <p className="t-label" style={{ color: gradeBarColor(issuerGrade) }}>{issuerGrade}</p>
+            <p className="t-caption mt-0.5">as of {latestPeriod}</p>
+          </div>
         </div>
         <FactorAssessment pillars={issuerPillars} />
         <ScoreComposition

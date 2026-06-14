@@ -112,6 +112,8 @@ export interface FinancialSection {
   pct: number;
   metrics: FinancialMetric[];
   commentary: string;
+  quarterly?: string;
+  outlook?: string;
 }
 
 export const financials: Record<string, FinancialSection> = {
@@ -120,25 +122,34 @@ export const financials: Record<string, FinancialSection> = {
     pct: 66,
     metrics: [
       { label: 'Net Worth', unit: '₹ Cr', values: [{ period: 'FY24', value: 2050 }, { period: 'FY25', value: 2356 }, { period: '3Q26', value: 2713 }] },
-      { label: 'Leverage', unit: 'x', values: [{ period: 'FY24', value: 1.44 }, { period: 'FY25', value: 1.63 }, { period: '3Q26', value: 2.40 }] },
       { label: 'Total CAR', unit: '%', values: [{ period: 'FY24', value: 33.89 }, { period: 'FY25', value: 29.59 }, { period: '3Q26', value: 23.55 }] },
-      { label: 'Tier I CAR', unit: '%', values: [{ period: 'FY24', value: 32.64 }, { period: 'FY25', value: 28.34 }, { period: '3Q26', value: 22.30 }] },
+      { label: 'Tier-I CAR', unit: '%', values: [{ period: 'FY24', value: 32.64 }, { period: 'FY25', value: 28.34 }, { period: '3Q26', value: 22.30 }] },
+      { label: 'Tier-II CAR', unit: '%', values: [{ period: 'FY24', value: 1.25 }, { period: 'FY25', value: 1.25 }, { period: '3Q26', value: 1.25 }] },
+      { label: 'Leverage (Debt/Equity)', unit: 'x', values: [{ period: 'FY24', value: 1.44 }, { period: 'FY25', value: 1.63 }, { period: '3Q26', value: 2.40 }] },
+      { label: 'Gearing', unit: 'x', values: [{ period: 'FY24', value: 1.44 }, { period: 'FY25', value: 1.63 }, { period: '3Q26', value: 2.40 }] },
       { label: 'NNPA / Net Worth', unit: '%', values: [{ period: 'FY24', value: 1.52 }, { period: 'FY25', value: 1.84 }, { period: '3Q26', value: 1.24 }] },
       { label: 'Internal Capital Generation', unit: '%', values: [{ period: 'FY24', value: 9.16 }, { period: 'FY25', value: 10.04 }, { period: '3Q26', value: 20.88 }] },
     ],
-    commentary: `Net worth has grown steadily through profit accumulation, ESOP exercises, and earlier equity raises, reaching ₹2,713 Cr in 3Q26. However, AUM growth has meaningfully outpaced internal capital generation, easing Total CAR from 33.89% in FY24 to 23.55% by 3Q26 and lifting leverage to 2.40x — a moderate but rising level. The comfort here is capital-raising ability: KrazyBee's institutional shareholder base and unicorn valuation (post the April 2026 Series E) materially reduce the risk of a capital gap. Tier I CAR at 22.30% continues to provide adequate buffer above regulatory minimums, though headroom is narrowing relative to growth aspirations.`,
+    commentary: `Net worth has grown steadily through profit accumulation, ESOP exercises, and earlier equity raises, reaching ₹2,713 Cr in 3Q26. However, AUM growth has meaningfully outpaced internal capital generation, easing Total CAR from 33.89% in FY24 to 23.55% by 3Q26 and lifting leverage to 2.40x — a moderate but rising level. The comfort here is capital-raising ability: KrazyBee's institutional shareholder base and unicorn valuation (post the April 2026 Series E) materially reduce the risk of a capital gap.`,
+    quarterly: `In 3Q26 net worth rose to ₹2,713 Cr while Total CAR eased to 23.55% and leverage climbed to 2.40x as on-book AUM expanded faster than internal accruals. Tier-I CAR of 22.30% remains well above the 15% regulatory floor, and internal capital generation jumped to 20.88% on stronger quarterly profitability.`,
+    outlook: `The April 2026 Series E (~$1.5B valuation) is expected to rebuild headroom; management has indicated it will keep Total CAR above ~20%. Continued rapid AUM growth is the key variable — absent further raises, leverage would drift higher through FY27, which is the principal item to monitor.`,
   },
   fundingLiquidity: {
     grade: 'Strong',
     pct: 64,
     metrics: [
-      { label: 'Cash & Equivalents', unit: '₹ Cr', values: [{ period: 'FY24', value: 289 }, { period: 'FY25', value: 395 }, { period: '3Q26', value: 708 }] },
+      { label: 'Total Funding', unit: '₹ Cr', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: 4280 }, { period: '3Q26', value: 6144 }] },
+      { label: 'Cost of Funds', unit: '%', values: [{ period: 'FY24', value: 11.66 }, { period: 'FY25', value: 11.83 }, { period: '3Q26', value: 11.67 }] },
+      { label: 'Cash & Equivalents (CCE)', unit: '₹ Cr', values: [{ period: 'FY24', value: 289 }, { period: 'FY25', value: 395 }, { period: '3Q26', value: 708 }] },
       { label: 'CCE / Total Assets', unit: '%', values: [{ period: 'FY24', value: 5.72 }, { period: 'FY25', value: 6.33 }, { period: '3Q26', value: 6.77 }] },
+      { label: 'CCE / <12M Repayments', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: 12.7 }, { period: '3Q26', value: 13.0 }] },
       { label: 'Liquidity Coverage Ratio', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: 149.7 }, { period: '3Q26', value: 135.5 }] },
       { label: 'Liabilities Due <12M', unit: '₹ Cr', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: 3107 }, { period: '3Q26', value: 5438 }] },
-      { label: 'CCE / <12M Liabilities', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: 12.7 }, { period: '3Q26', value: 13.0 }] },
+      { label: 'Top-10 Lender Concentration', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: null }, { period: '3Q26', value: 19.6 }] },
     ],
-    commentary: `KrazyBee's funding profile is well diversified: NCDs (48%), term loans (34%), securitization, commercial paper, and WCDL constitute total funding of ₹6,144 Cr as of Dec'25. Top-10 lender concentration is low at ~19.6% of borrowings. Liquidity coverage ratio of 135.5% provides a statutory buffer, though absolute cash coverage of short-term liabilities is thin (~13%). There is no cumulative ALM shortfall up to one year. The key risk is short-term refinancing dependency given rapid AUM growth; however, lender diversification and access to capital markets offset this.`,
+    commentary: `KrazyBee's funding profile is well diversified: NCDs (48%), term loans (34%), securitization, commercial paper, and WCDL constitute total funding of ₹6,144 Cr as of Dec'25. Top-10 lender concentration is low at ~19.6% of borrowings. Liquidity coverage ratio of 135.5% provides a statutory buffer, though absolute cash coverage of short-term liabilities is thin (~13%). There is no cumulative ALM shortfall up to one year.`,
+    quarterly: `Total funding reached ₹6,144 Cr by Dec'25, with NCDs at 48% and term loans 34%; the LCR held at 135.5% and there was no cumulative ALM shortfall within one year. Cash cover of near-term liabilities stayed thin at ~13%, with ₹5,438 Cr of liabilities maturing inside 12 months.`,
+    outlook: `Diversification into securitisation and capital-market issuance should deepen as the rating stabilises at A. The principal watch item is refinancing of the maturing book; low lender concentration (~19.6%) mitigates rollover risk, and the post-Series E balance sheet supports continued market access.`,
   },
   profitability: {
     grade: 'Strong',
@@ -148,13 +159,18 @@ export const financials: Record<string, FinancialSection> = {
       { label: 'NIM', unit: '%', values: [{ period: 'FY24', value: 27.37 }, { period: 'FY25', value: 22.52 }, { period: '3Q26', value: 19.34 }] },
       { label: 'Yield on Loans', unit: '%', values: [{ period: 'FY24', value: 33.86 }, { period: 'FY25', value: 29.48 }, { period: '3Q26', value: 27.65 }] },
       { label: 'Cost of Funds', unit: '%', values: [{ period: 'FY24', value: 11.66 }, { period: 'FY25', value: 11.83 }, { period: '3Q26', value: 11.67 }] },
+      { label: 'Spread', unit: '%', values: [{ period: 'FY24', value: 22.20 }, { period: 'FY25', value: 17.65 }, { period: '3Q26', value: 15.98 }] },
       { label: 'ROAA', unit: '%', values: [{ period: 'FY24', value: 5.03 }, { period: 'FY25', value: 3.92 }, { period: '3Q26', value: 6.38 }] },
       { label: 'ROAE', unit: '%', values: [{ period: 'FY24', value: 11.01 }, { period: 'FY25', value: 10.04 }, { period: '3Q26', value: 20.88 }] },
       { label: 'Cost-to-Income', unit: '%', values: [{ period: 'FY24', value: 50.03 }, { period: 'FY25', value: 51.60 }, { period: '3Q26', value: 50.84 }] },
-      { label: 'Cost of Risk', unit: '%', values: [{ period: 'FY24', value: 11.93 }, { period: 'FY25', value: 14.13 }, { period: '3Q26', value: 10.80 }] },
+      { label: 'Opex / AUM', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: null }, { period: '3Q26', value: null }] },
+      { label: 'Credit Cost (Cost of risk)', unit: '%', values: [{ period: 'FY24', value: 11.93 }, { period: 'FY25', value: 14.13 }, { period: '3Q26', value: 10.80 }] },
+      { label: 'PPOP', unit: '₹ Cr', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: null }, { period: '3Q26', value: null }] },
       { label: 'PAT', unit: '₹ Cr', values: [{ period: 'FY24', value: 200 }, { period: 'FY25', value: 221 }, { period: '3Q26', value: 138 }] },
     ],
-    commentary: `Profitability has strengthened materially in recent quarters. 3Q26 ROAA of 6.38% and ROAE of 20.88% reflect operating leverage from scale, improved credit costs, and a high-yield unsecured book. NIM compression (yield declining from 33.86% to 27.65%; broadly stable cost of funds at ~11.7%) is expected as the portfolio matures. Cost-to-income is stable near 51%, while cost of risk has improved to 10.80% in 3Q26 from 14.13% in FY25. PAT of ₹138 Cr in 3Q26 alone approaches FY24 annual PAT, signalling a step-change in earnings power.`,
+    commentary: `Profitability has strengthened materially in recent quarters. 3Q26 ROAA of 6.38% and ROAE of 20.88% reflect operating leverage from scale, improved credit costs, and a high-yield unsecured book. NIM compression (yield declining from 33.86% to 27.65%; broadly stable cost of funds at ~11.7%) is expected as the portfolio matures. Cost-to-income is stable near 51%.`,
+    quarterly: `3Q26 delivered ROAA of 6.38% and ROAE of 20.88% on a high-yield book, with credit cost improving to 10.80% and cost-to-income stable near 51%. The spread compressed to ~16% as yields normalised; PAT of ₹138 Cr in the single quarter approached the full FY24 figure.`,
+    outlook: `Margins should compress gradually as the book matures and the funding mix lengthens, but operating leverage and normalising credit costs support double-digit ROAE. A sustained sub-12% credit cost is the swing factor for FY27 earnings power.`,
   },
   assetQuality: {
     grade: 'Strong',
@@ -163,10 +179,14 @@ export const financials: Record<string, FinancialSection> = {
       { label: 'On-book AUM', unit: '₹ Cr', values: [{ period: 'FY24', value: 4824 }, { period: 'FY25', value: 5961 }, { period: '3Q26', value: 8418 }, { period: '4Q26', value: 9861 }] },
       { label: 'GNPA', unit: '%', values: [{ period: 'FY24', value: 3.05 }, { period: 'FY25', value: 3.13 }, { period: '3Q26', value: 1.79 }, { period: '4Q26', value: 1.53 }] },
       { label: 'NNPA', unit: '%', values: [{ period: 'FY24', value: 0.86 }, { period: 'FY25', value: 0.80 }, { period: '3Q26', value: 0.44 }, { period: '4Q26', value: 0.14 }] },
-      { label: 'Write-offs', unit: '%', values: [{ period: 'FY24', value: 7.43 }, { period: 'FY25', value: 10.54 }, { period: '3Q26', value: null }] },
-      { label: 'NPA Coverage', unit: '%', values: [{ period: 'FY24', value: 232 }, { period: 'FY25', value: 185 }, { period: '3Q26', value: null }] },
+      { label: 'PCR (NPA coverage)', unit: '%', values: [{ period: 'FY24', value: 232 }, { period: 'FY25', value: 185 }, { period: '3Q26', value: null }, { period: '4Q26', value: null }] },
+      { label: 'Net Write-offs', unit: '%', values: [{ period: 'FY24', value: 7.43 }, { period: 'FY25', value: 10.54 }, { period: '3Q26', value: null }, { period: '4Q26', value: null }] },
+      { label: 'Restructured', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: null }, { period: '3Q26', value: null }, { period: '4Q26', value: null }] },
+      { label: 'Collection Efficiency', unit: '%', values: [{ period: 'FY24', value: null }, { period: 'FY25', value: null }, { period: '3Q26', value: null }, { period: '4Q26', value: null }] },
     ],
-    commentary: `Asset quality is the standout positive in recent periods. GNPA has declined sharply from 3.13% in FY25 to 1.53% by 4Q26, reflecting tighter underwriting models, improved collections, and portfolio seasoning. NNPA of 0.14% by 4Q26 is exceptionally low for an unsecured lender. The portfolio is highly granular — 94% of AUM under ₹5 lakh ticket — which limits single-name concentration risk. The structural risk remains: 97% of the book is unsecured, making it vulnerable to income shocks and regulatory changes in digital lending.`,
+    commentary: `Asset quality is the standout positive in recent periods. GNPA has declined sharply from 3.13% in FY25 to 1.53% by 4Q26, reflecting tighter underwriting models, improved collections, and portfolio seasoning. NNPA of 0.14% by 4Q26 is exceptionally low for an unsecured lender. The portfolio is highly granular — 94% of AUM under ₹5 lakh ticket — which limits single-name concentration risk.`,
+    quarterly: `GNPA improved to 1.53% and NNPA to 0.14% by 4Q26 as tighter underwriting and seasoning flowed through; the book stayed highly granular (94% under ₹5 lakh ticket), and on-book AUM scaled to ₹9,861 Cr.`,
+    outlook: `Asset quality is at a cyclical best; the structural risk is the 97% unsecured mix, which can deteriorate quickly in an income shock or under tighter digital-lending regulation. Write-off intensity is the metric to monitor through FY27.`,
   },
 };
 
@@ -177,6 +197,8 @@ export const qualitativeMetrics = [
     grade: 'Weak' as Grade,
     pct: 40,
     commentary: `KrazyBee operates a digital-first unsecured personal lending model through the KreditBee application, offering personal loans to salaried and self-employed individuals, predominantly in the ₹1,000–₹5 lakh ticket range. The company also participates in co-lending arrangements with banks. The model is technology-led: proprietary credit algorithms, automated KYC, and app-based disbursements drive operational efficiency and allow rapid scale. However, the credit model's ability to manage underwriting through full economic cycles is still evolving. The unsecured segment is susceptible to borrower over-leveraging and income disruption, and the digital acquisition channel introduces adverse selection risk relative to branch-based lenders.`,
+    quarterly: `Through FY26 the model continued to scale on co-lending and proprietary app-based origination, with improving early-delinquency metrics signalling that underwriting refinements are taking hold even as the unsecured book grows.`,
+    outlook: `The durability of the credit model through a full down-cycle remains unproven; AI-driven underwriting investments funded by the Series E should help, but the segment stays structurally exposed to income shocks and any tightening of RBI digital-lending norms.`,
   },
   {
     factor: 'Business Position',
@@ -184,6 +206,8 @@ export const qualitativeMetrics = [
     grade: 'Strong' as Grade,
     pct: 80,
     commentary: `KrazyBee (operating as KreditBee) is among the largest pure-play digital unsecured personal lenders in India, with approximately a decade of vintage by 2026. The KreditBee brand has achieved significant organic reach, with over 50 million registered users. Its digital-native distribution and underwriting advantages have attracted institutional capital from marquee investors. Competition from incumbent banks, large fintech NBFCs, and app-based lenders is intensifying. Geographic concentration in southern India (primarily Telangana, Karnataka, Tamil Nadu) remains a risk; the company is actively diversifying northward.`,
+    quarterly: `Scale advantages widened in FY26 as registered users and disbursement volumes grew; northward geographic expansion progressed, modestly reducing the historic concentration in the southern states.`,
+    outlook: `The franchise should retain a leadership position in digital unsecured PL, but margins and growth will be tested by intensifying competition from banks and large fintech NBFCs. Successful diversification beyond the South is the key to defending the position.`,
   },
   {
     factor: 'Borrower Profile',
@@ -191,6 +215,8 @@ export const qualitativeMetrics = [
     grade: 'Weak' as Grade,
     pct: 40,
     commentary: `The target borrower is a young, urban or semi-urban salaried professional, typically aged 29 (median), with an average annual income of approximately ₹6 lakh. Many borrowers are new-to-credit (NTC) or thin-file, relying on alternative data inputs for credit assessment. A meaningful share is employed in informal or gig-economy roles with variable income. This demographic is inherently sensitive to macroeconomic shocks — job losses, inflation, or stagnant wage growth — which could rapidly increase default rates. Borrower over-leveraging is a documented sector risk.`,
+    quarterly: `Granularity remained a mitigant in FY26, with 94% of AUM under ₹5 lakh ticket and improving repayment behaviour among seasoned cohorts, though the new-to-credit share keeps the profile inherently vulnerable.`,
+    outlook: `Borrower fragility is the structural ceiling on this factor; sector-wide over-leverage and any macro stress would pressure this cohort first. Bureau-led tightening and tighter NTC underwriting are the principal mitigants going into FY27.`,
   },
   {
     factor: 'Management & Governance',
@@ -198,6 +224,8 @@ export const qualitativeMetrics = [
     grade: 'Moderate' as Grade,
     pct: 60,
     commentary: `The founding team — Madhusudan Ekambaram (MD & CEO) and Krishnaswamy Karthikeyan (Director) — brings over a decade of fintech and banking experience. The 11-member board includes independent directors and nominee directors from institutional shareholders. The company is regulated by the MCA, RBI and SEBI. Two governance concerns: the resignation of statutory auditor Tattavam & Co. in August 2025 (a replacement was sought) and notably elevated MD remuneration relative to NBFC peers of comparable scale.`,
+    quarterly: `The auditor transition following Tattavam & Co.'s August 2025 resignation was completed without any qualification, and board oversight strengthened ahead of the proposed public-company conversion.`,
+    outlook: `Governance is on an improving track as the company prepares for a potential IPO, which would bring fuller disclosure and an independent-majority board. MD remuneration and the recency of the auditor change keep the factor at Moderate near-term.`,
   },
   {
     factor: 'Ownership',
@@ -205,6 +233,8 @@ export const qualitativeMetrics = [
     grade: 'Strong' as Grade,
     pct: 80,
     commentary: `KrazyBee has no promoter holding in the traditional sense; the founding team holds a combined ~8.4%. The cap table is dominated by PE/VC investors: PI Opportunities (Premji Invest) at 24.25%, NewQuest/TPG at 23.52%, Alpine Opportunity Fund at 16.87%, and Motilal Oswal's India Business Excellence Fund at 13.38%. This institutional concentration is a strength — it aligns board incentives with governance quality. The April 2026 unicorn round ($280M Series E at ~$1.5B valuation) further signals institutional confidence.`,
+    quarterly: `The April 2026 Series E added marquee investors and reaffirmed the institutional cap table; founder holding stayed around ~8.4% post-round.`,
+    outlook: `A high-quality, mission-aligned investor base remains the key risk mitigant and supports capital-raising ability. A future IPO would broaden the shareholder base while preserving institutional anchoring.`,
   },
 ];
 

@@ -37,7 +37,7 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
         </span>
       </div>
 
-      {/* Vertical bars — width ∝ max, fill height ∝ score/max */}
+      {/* Equal-width vertical bars — fill height ∝ score/max */}
       <div className="flex gap-3 items-end mb-2 shrink-0" style={{ height: 200 }} role="list" aria-label="Total Score composition">
         {components.map(c => {
           const color = gradeBarColor(c.grade);
@@ -49,9 +49,8 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
               onClick={() => toggle(c.key)}
               aria-expanded={isActive}
               title={`${displayLabel(c)}: ${c.score}/${c.max} · ${c.pct}% — click to drill down`}
-              className="relative h-full rounded-xl overflow-hidden transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+              className="relative flex-1 h-full rounded-xl overflow-hidden transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
               style={{
-                width: `${c.weightPct}%`,
                 background: 'rgba(255,255,255,0.05)',
                 border: isActive ? `1px solid ${color}` : '1px solid rgba(255,255,255,0.08)',
                 boxShadow: isActive ? `0 0 16px ${color}55` : 'none',
@@ -70,11 +69,11 @@ export const ScoreComposition: React.FC<Props> = ({ components, scorecard, combi
         })}
       </div>
 
-      {/* Labels under bars */}
+      {/* Labels under bars (equal width) */}
       <div className="flex gap-3 mb-1">
         {components.map(c => (
-          <button key={c.key} onClick={() => toggle(c.key)} className="text-left" style={{ width: `${c.weightPct}%` }}>
-            <p className="text-[11px] font-medium text-primary-text truncate flex items-center gap-1">
+          <button key={c.key} onClick={() => toggle(c.key)} className="flex-1 min-w-0 text-left">
+            <p className="text-[11px] font-medium text-primary-text flex items-center gap-1">
               {active === c.key ? <ChevronDown size={11} className="shrink-0" /> : <ChevronRight size={11} className="shrink-0" />}
               <span className="truncate">{displayLabel(c)}</span>
             </p>
