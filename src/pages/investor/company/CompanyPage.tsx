@@ -19,10 +19,9 @@ import { DataSourcesPanel } from '../../../components/DataSourcesPanel';
 import { SignalsFeed } from '../../../components/SignalsFeed';
 import { WeightageWhatIf } from '../../../components/WeightageWhatIf';
 import { ExpandableAnalysis } from '../../../components/ExpandableAnalysis';
-import { FactorHeatmap } from '../../../components/FactorHeatmap';
+import { ScorecardTable } from '../../../components/ScorecardTable';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
-import { gradeForPct } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
 import type { FinancialSection } from '../../../data/krazybee';
 
@@ -43,44 +42,70 @@ const latest = (sec: FinancialSection | undefined, label: string): string => {
 
 // ── Financial panel ─────────────────────────────────────────────────────────────
 
-const FinancialPanel: React.FC<{ sec: FinancialSection | undefined }> = ({ sec }) => {
+const FIN_LABELS: Record<string, string> = {
+  capitalization: 'Capitalization',
+  fundingLiquidity: 'Funding & Liquidity',
+  profitability: 'Profitability',
+  assetQuality: 'Asset Quality',
+};
+
+const FinancialPanel: React.FC<{ sec: FinancialSection | undefined; sectionKey: string }> = ({ sec, sectionKey }) => {
   if (!sec) return <p className="text-muted-text text-sm p-4">Select a financial section.</p>;
   const periods = sec.metrics[0]?.values.map(v => v.period) ?? [];
+  const fmt = (n: number) => Math.abs(n) >= 1000 ? n.toLocaleString('en-IN') : String(n);
   return (
     <div>
-      <div className="flex items-center gap-3 mb-5">
-        <GradeBadge grade={sec.grade} />
+      <div className="flex items-center gap-3 mb-4">
+        <h3 className="t-h3 text-primary-text">{FIN_LABELS[sectionKey] ?? 'Financials'} — {sec.grade}</h3>
+        <GradeBadge grade={sec.grade} compact />
       </div>
-      <div className="overflow-x-auto rounded-xl mb-5" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-        <table className="w-full text-sm">
+
+      {/* Full ratio table — sticky indicator column + sticky header, N periods */}
+      <div className="overflow-x-auto rounded-xl mb-5 relative" style={{ border: '1px solid rgba(255,255,255,0.08)', maxHeight: 520 }}>
+        <table className="text-sm border-separate" style={{ borderSpacing: 0, minWidth: '100%' }}>
           <thead>
-            <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Metric</th>
-              {periods.map(p => <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">{p}</th>)}
+            <tr>
+              <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide sticky left-0 top-0 z-20"
+                style={{ background: 'rgba(13,30,32,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
+                Indicator
+              </th>
+              {periods.map(p => (
+                <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide sticky top-0 z-10"
+                  style={{ background: 'rgba(13,30,32,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 92 }}>
+                  {p}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {sec.metrics.map(m => (
-              <tr key={m.label} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                <td className="px-5 py-3">
-                  <span className="font-medium text-primary-text">{m.label}</span>
-                  <span className="text-xs text-muted-text ml-1.5">{m.unit}</span>
+              <tr key={m.label} className="group">
+                <td className="px-4 py-2.5 sticky left-0 z-10"
+                  style={{ background: 'rgba(11,26,28,0.98)', borderBottom: '1px solid rgba(255,255,255,0.05)', minWidth: 200 }}>
+                  <span className="text-primary-text text-[13px]">{m.label}</span>
+                  {m.unit && <span className="text-[11px] text-muted-text ml-1.5">{m.unit}</span>}
                 </td>
-                {m.values.map((v, i) => (
-                  <td key={i} className="px-4 py-3 text-right font-mono-nums text-primary-text">
-                    {v.value !== null ? v.value.toLocaleString() : '—'}
-                  </td>
-                ))}
+                {m.values.map((v, i) => {
+                  const neg = v.value !== null && v.value < 0;
+                  return (
+                    <td key={i} className="px-4 py-2.5 text-right font-mono-nums text-[13px]"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: neg ? '#FB7185' : '#E9F3F1' }}>
+                      {v.value === null ? <span className="text-muted-text">—</span>
+                        : neg ? `(${fmt(Math.abs(v.value))})` : fmt(v.value)}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <p className="t-caption mb-5">Negative values shown in brackets and the Weak colour. "—" where the report does not report a figure.</p>
+
+      {/* Summary → full write-up + quarterly update + outlook */}
       <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
         <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Commentary</p>
-        <ExpandableAnalysis commentary={sec.commentary} quarterly={sec.quarterly} outlook={sec.outlook} />
+        <ExpandableAnalysis variant="financial" commentary={sec.commentary} quarterly={sec.quarterly} outlook={sec.outlook} />
       </div>
     </div>
   );
@@ -427,38 +452,13 @@ export const CompanyPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Scoring heatmap — hierarchical */}
-                <div className="glass-card p-5">
-                  <h3 className="t-h3 text-primary-text mb-4">Scoring Heatmap</h3>
-                  {/* Issuer group → its two pillars */}
-                  <div className="mb-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="t-eyebrow" style={{ color: '#2DD4BF' }}>Issuer (Fundamental)</span>
-                      <span className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-                    </div>
-                    <div className="space-y-4">
-                      {report.scorecard.filter(p => p.name === 'Business & Management' || p.name === 'Financial Analysis').map(p => (
-                        <div key={p.name}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="t-label text-primary-text">{p.name}</span>
-                            <GradeBadge grade={gradeForPct(p.pct)} compact />
-                          </div>
-                          <FactorHeatmap factors={p.factors} />
-                        </div>
-                      ))}
-                    </div>
+                {/* Scorecard — grouped parameters with grade + commentary */}
+                <div>
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h3 className="t-h3 text-primary-text">Assessment parameters</h3>
+                    <span className="t-caption">Grades as stated in the research scorecard · expand a parameter for its commentary</span>
                   </div>
-                  {/* Other components */}
-                  {report.scorecard.filter(p => !['Business & Management', 'Financial Analysis'].includes(p.name)).map(p => (
-                    <div key={p.name} className="mb-5 last:mb-0">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="t-eyebrow" style={{ color: '#2DD4BF' }}>{p.name}</span>
-                        <GradeBadge grade={gradeForPct(p.pct)} compact />
-                        <span className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
-                      </div>
-                      <FactorHeatmap factors={p.factors} />
-                    </div>
-                  ))}
+                  <ScorecardTable report={report} />
                 </div>
               </div>
             )}
@@ -497,12 +497,12 @@ export const CompanyPage: React.FC = () => {
                       style={activeFactorName === m.factor ? { borderColor: 'rgba(45,212,191,0.3)', boxShadow: '0 0 0 1px rgba(45,212,191,0.15), 0 12px 34px rgba(0,0,0,0.38)' } : {}}>
                       <div className="flex items-center gap-3 mb-3 flex-wrap">
                         <h3 className="t-h3 text-primary-text">{m.factor}</h3>
-                        <GradeBadge grade={gradeForPct(m.pct)} />
+                        <GradeBadge grade={m.grade} />
                       </div>
                       <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(gradeForPct(m.pct)) }} />
+                        <div className="h-full rounded-full" style={{ width: `${m.pct}%`, backgroundColor: gradeBarColor(m.grade) }} />
                       </div>
-                      <ExpandableAnalysis commentary={m.commentary} quarterly={m.quarterly} outlook={m.outlook} readingMode={readingMode} />
+                      <ExpandableAnalysis commentary={m.commentary} readingMode={readingMode} />
                     </div>
                   ))}
                 </div>
@@ -565,15 +565,20 @@ export const CompanyPage: React.FC = () => {
             {/* ── FINANCIAL ANALYSIS ── */}
             {section === 'financial' && (
               <div>
-                <h2 className="text-base font-semibold text-primary-text mb-5">Financial Analysis</h2>
-                <div className="pill-track flex gap-1 mb-6 flex-wrap">
-                  {Object.keys(report.financials).map(k => (
-                    <button key={k} onClick={() => setFinancialTab(k)} className={financialTab === k ? 'pill-active' : 'pill-inactive'}>
-                      {k === 'fundingLiquidity' ? 'Funding & Liquidity' : k === 'capitalization' ? 'Capitalization' : k === 'profitability' ? 'Profitability' : 'Asset Quality'}
-                    </button>
-                  ))}
+                <h2 className="t-h2 text-primary-text mb-5">Financial Analysis</h2>
+                <div className="inline-flex items-center gap-1 p-1 rounded-full mb-6 flex-wrap" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {Object.keys(report.financials).map(k => {
+                    const on = financialTab === k;
+                    return (
+                      <button key={k} onClick={() => setFinancialTab(k)} aria-pressed={on}
+                        className="px-3 py-1 rounded-full text-[13px] font-medium leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+                        style={on ? { background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' } : { background: 'transparent', color: '#9CB3B1' }}>
+                        {k === 'fundingLiquidity' ? 'Funding & Liquidity' : k === 'capitalization' ? 'Capitalization' : k === 'profitability' ? 'Profitability' : 'Asset Quality'}
+                      </button>
+                    );
+                  })}
                 </div>
-                <FinancialPanel sec={report.financials[financialTab]} />
+                <FinancialPanel sec={report.financials[financialTab]} sectionKey={financialTab} />
 
                 {/* Funding & liquidity extras */}
                 {financialTab === 'fundingLiquidity' && (
