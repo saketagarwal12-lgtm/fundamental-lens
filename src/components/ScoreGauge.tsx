@@ -42,16 +42,16 @@ export const ScoreGauge: React.FC<Props> = ({
             style={{ transition: 'stroke-dashoffset 1.1s cubic-bezier(0.4,0,0.2,1)' }}
           />
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-2">
           <div className="flex items-baseline gap-0.5">
-            <span className="font-mono-nums font-bold leading-none text-glow-teal" style={{ fontSize: size * 0.26, color: '#2DD4BF' }}>
+            <span className="font-mono-nums font-bold leading-none text-glow-teal" style={{ fontSize: size * 0.2, color: '#2DD4BF' }}>
               {counted}
             </span>
-            <span className="font-mono-nums text-muted-text leading-none" style={{ fontSize: size * 0.1 }}>/{max}</span>
+            <span className="font-mono-nums font-normal text-muted-text leading-none" style={{ fontSize: size * 0.085 }}>/{max}</span>
           </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="font-mono-nums text-xs" style={{ color: '#9CB3B1' }}>{pct}%</span>
-            <span className="text-xs font-semibold" style={{ color: bandColor }}>{band}</span>
+          <div className="flex items-center gap-1.5 mt-2">
+            <span className="font-mono-nums font-normal" style={{ fontSize: size * 0.07, color: '#9CB3B1' }}>{pct}%</span>
+            <span className="font-medium" style={{ fontSize: size * 0.07, color: bandColor }}>{band}</span>
           </div>
         </div>
       </div>

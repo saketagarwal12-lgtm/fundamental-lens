@@ -13,7 +13,7 @@ const offerings = [
     icon: Gauge, lead: true, upgraded: false,
     name: 'Fundamental Score',
     tagline: 'A real-time fundamental score for corporates',
-    body: "A CIBIL-style score for an issuer's fundamentals, kept current — not a once-a-year rating.",
+    body: "A CIBIL-style score for an issuer's fundamentals, kept current — not a once-a-year rating. A structured, financial-model-driven fundamental analysis distilled from 119 assessment factors (40 qualitative, 79 quantitative).",
     chips: ['Quarterly financials', 'News-driven qualitative', 'Sectoral-trend signals', 'Debt & default (Commercial CIBIL, partner)', 'Corporate signals (management, ownership, litigation, penalties)', 'Real-time news', 'Score-movement graph with reasons', 'Adjustable factor weightage [Upgraded]'],
   },
   {
@@ -86,7 +86,7 @@ const features = [
   {
     icon: BarChart2,
     title: 'One Fundamental Score, tracked over time',
-    body: 'A single 0–500 score per issuer, broken down across business, financials, issuance, pricing and sector — and followed month over month so you see how a holding evolves, not just where it stands today.',
+    body: 'A structured, financial-model-driven fundamental analysis — one Fundamental Score distilled from 119 assessment factors (40 qualitative, 79 quantitative), broken down across business, financials, issuance, pricing and sector, and followed month over month.',
   },
   {
     icon: Shield,
@@ -173,8 +173,11 @@ export const Landing: React.FC = () => {
             <h1 className="font-serif text-3xl lg:text-[2.6rem] font-semibold text-primary-text leading-[1.15] mb-4 text-glow-teal">
               {BRAND.tagline}
             </h1>
-            <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed mb-5">
+            <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed mb-3">
               Access institutional-grade fundamental research, a real-time Fundamental Score, financial &amp; non-financial database, and an interactive AI bot with a single click.
+            </p>
+            <p className="text-sm text-muted-text font-normal leading-relaxed mb-5">
+              A structured, financial-model-driven fundamental analysis — one Fundamental Score distilled from <span className="text-primary-text font-medium">119 assessment factors</span> (40 qualitative, 79 quantitative).
             </p>
 
             {/* Value chips */}
@@ -225,9 +228,9 @@ export const Landing: React.FC = () => {
             <div className="flex items-center gap-4 mb-4">
               <ScoreGauge score={134} max={200} pct={67} size={120} strokeWidth={10} caption="Fundamental Score" />
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-muted-text mb-1">Fundamental Score · 12-month trend</p>
-                <Sparkline data={[128, 128, 126, 128, 130, 130, 128, 132, 132, 132, 138, 134]} positive />
-                <p className="text-[11px] text-muted-text mt-1 font-mono-nums">134 / 200 · 67%</p>
+                <p className="text-[11px] text-muted-text mb-1.5">Fundamental Score · 12-month trend</p>
+                <Sparkline data={[128, 128, 126, 128, 130, 130, 128, 132, 132, 132, 138, 134]} positive width="100%" height={44} strokeWidth={2.5} />
+                <p className="text-[11px] text-muted-text mt-1.5 font-mono-nums">134 / 200 · 67%</p>
                 <p className="text-[11px] text-muted-text mt-0.5 font-mono-nums">Total 327 / 500 · Rating 7</p>
               </div>
             </div>
@@ -279,7 +282,7 @@ export const Landing: React.FC = () => {
           {[
             { v: '4', l: 'Issuers covered' },
             { v: '3', l: 'NBFC sub-sectors' },
-            { v: '25', l: 'Factors assessed' },
+            { v: '119', l: 'Assessment factors' },
             { v: '0–500', l: 'Fundamental Score scale' },
           ].map(s => (
             <div key={s.l} className="rounded-2xl p-4 text-center" style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}>
@@ -288,7 +291,10 @@ export const Landing: React.FC = () => {
             </div>
           ))}
         </div>
-        <p className="t-caption text-center mt-3">Scores are produced by a deterministic model and reviewed by a research analyst before publishing.</p>
+        <div className="mt-3 rounded-2xl px-4 py-3 text-center" style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}>
+          <p className="text-sm font-medium text-primary-text">119 assessment factors · 40 qualitative · 79 quantitative</p>
+        </div>
+        <p className="t-caption text-center mt-3">A structured, financial-model-driven fundamental analysis — produced by a deterministic model and reviewed by a research analyst before publishing.</p>
       </section>
 
       {/* Product offerings (Phase 6.2) */}
@@ -431,7 +437,7 @@ export const Landing: React.FC = () => {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">How it works</h2>
-            <p className="text-muted-text">From search to informed decision in under five minutes.</p>
+            <p className="text-muted-text">From search to informed decision in under five minutes — behind every score sits a structured, financial-model-driven fundamental analysis of 119 assessment factors (40 qualitative, 79 quantitative).</p>
           </div>
           <div className="space-y-5">
             {steps.map(s => (
