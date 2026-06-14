@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { Aperture } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 
 export interface RailItem {
@@ -12,12 +11,13 @@ export interface RailItem {
 
 interface Props {
   items: RailItem[];
-  home: string;          // brand glyph destination
+  home?: string;         // (brand lives in the top bar; kept for API compatibility)
   badge?: string;        // e.g. "Creator"
 }
 
 // Tier 1 — permanent slim icon rail with a hover/focus flyout that floats above content.
-export const IconRail: React.FC<Props> = ({ items, home, badge }) => {
+// Brand is shown once in the top bar, so the rail starts directly with its functional icons.
+export const IconRail: React.FC<Props> = ({ items, badge }) => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -40,9 +40,6 @@ export const IconRail: React.FC<Props> = ({ items, home, badge }) => {
         className="w-[60px] h-full flex flex-col items-center py-3 gap-1.5"
         style={{ background: 'rgba(10,25,27,0.9)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <Link to={home} aria-label="Fundamental Lens home" className="w-10 h-10 flex items-center justify-center mb-1 rounded-lg">
-          <Aperture size={22} strokeWidth={2.2} className="text-brand-teal" style={{ filter: 'drop-shadow(0 0 8px rgba(45,212,191,0.7))' }} />
-        </Link>
         {items.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}

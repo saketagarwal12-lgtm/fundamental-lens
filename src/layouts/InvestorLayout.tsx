@@ -59,7 +59,7 @@ export const InvestorLayout: React.FC = () => {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-text pointer-events-none" />
             <input
               type="search"
-              placeholder="Search issuers, ISINs…"
+              placeholder="Search a company…"
               value={search}
               onChange={e => { setSearch(e.target.value); setShowResults(true); }}
               onFocus={() => setShowResults(true)}

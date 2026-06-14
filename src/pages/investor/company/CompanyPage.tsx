@@ -22,6 +22,7 @@ import { ExpandableAnalysis } from '../../../components/ExpandableAnalysis';
 import { ScorecardTable } from '../../../components/ScorecardTable';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
+import { getScaledScore } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
 import type { FinancialSection } from '../../../data/krazybee';
 
@@ -37,6 +38,18 @@ const latest = (sec: FinancialSection | undefined, label: string): string => {
   if (!m) return '—';
   const v = [...m.values].reverse().find(x => x.value !== null);
   return v && v.value !== null ? `${v.value.toLocaleString()}${m.unit === '%' ? '%' : m.unit === 'x' ? 'x' : ''}` : '—';
+};
+
+// Latest value across any of the candidate labels (ratio names differ by entity).
+const latestAny = (sec: FinancialSection | undefined, labels: string[]): string => {
+  if (!sec) return '—';
+  for (const m of sec.metrics) {
+    if (labels.some(l => m.label.toLowerCase().includes(l.toLowerCase()))) {
+      const v = [...m.values].reverse().find(x => x.value !== null);
+      if (v && v.value !== null) return `${v.value.toLocaleString()}${m.unit === '%' ? '%' : m.unit === 'x' ? 'x' : ''}`;
+    }
+  }
+  return '—';
 };
 
 
@@ -218,6 +231,7 @@ export const CompanyPage: React.FC = () => {
 
   const firstName = company.name.split(' ')[0];
   const subSectorLabel = report?.subSectorKey === 'gold' ? 'Gold-Loan' : report?.subSectorKey === 'mfi' ? 'Microfinance (MFI)' : 'Digital Unsecured PL';
+  const issuerScore = report ? getScaledScore(report).components.find(c => c.key === 'issuer') : undefined;
 
   return (
     <div className="flex min-h-full page-fade">
@@ -283,48 +297,72 @@ export const CompanyPage: React.FC = () => {
         </div>
       </aside>
 
-      {/* Slim "show sections" affordance when collapsed */}
+      {/* Collapsed Tier-2 → section icon rail (icons + hover tooltips), distinct from the far-left rail */}
       {navCollapsed && (
-        <button onClick={toggleNav} aria-label="Show sections"
-          className="shrink-0 w-7 flex flex-col items-center justify-center gap-2 transition-colors"
-          style={{ background: 'rgba(10,25,27,0.7)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(10,25,27,0.7)')}>
-          <ChevronsRight size={15} className="text-brand-teal" />
-          <span className="text-[10px] text-muted-text tracking-wide" style={{ writingMode: 'vertical-rl' }}>Sections</span>
-        </button>
+        <nav aria-label="Sections"
+          className="shrink-0 w-14 flex flex-col items-center py-3 gap-1 overflow-y-auto"
+          style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+          <button onClick={toggleNav} aria-label="Expand sections" title="Expand sections"
+            className="w-9 h-9 flex items-center justify-center rounded-md text-brand-teal mb-1 transition-colors"
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+            <ChevronsRight size={16} />
+          </button>
+          {navItems.map(item => (
+            <button key={item.key} title={item.label} aria-label={item.label}
+              onClick={() => { setSection(item.key); setActiveFactorName(null); if (item.key === 'financial') setFinOpen(true); }}
+              className={`w-9 h-9 flex items-center justify-center rounded-md transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
+              <item.icon size={17} />
+            </button>
+          ))}
+        </nav>
       )}
 
       {/* Main content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
-        {/* Header */}
-        <div className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
-          style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex items-start gap-5 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h1 className="text-lg font-semibold text-primary-text">{company.name}</h1>
-                <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={recStyle(company.recommendation)}>{company.recommendation}</span>
+        {/* Header — full on Overview, slim on every other section */}
+        {section === 'overview' ? (
+          <div className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
+            style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-start gap-5 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h1 className="text-lg font-semibold text-primary-text">{company.name}</h1>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={recStyle(company.recommendation)}>{company.recommendation}</span>
+                </div>
+                <p className="text-xs text-muted-text">{company.sector} · {company.subSector} · {company.hq} · Est. {company.established}</p>
+                <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-text">
+                  <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    {company.externalRating} · {company.ratingAgency}
+                  </span>
+                  <span>Internal: {company.internalRating}/15</span>
+                  <span>Combined: {company.combinedScore}</span>
+                </div>
               </div>
-              <p className="text-xs text-muted-text">{company.sector} · {company.subSector} · {company.hq} · Est. {company.established}</p>
-              <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-text">
-                <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  {company.externalRating} · {company.ratingAgency}
-                </span>
-                <span>Internal: {company.internalRating}/15</span>
-                <span>Combined: {company.combinedScore}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <ScoreRing score={company.healthScore} size={68} strokeWidth={6} />
-              <div className="flex flex-col gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium"><Bell size={13} /> Alert</button>
-                <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Download size={13} /> PDF</button>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Star size={13} /> Watch</button>
+              <div className="flex items-center gap-4 shrink-0">
+                <ScoreRing score={company.healthScore} size={68} strokeWidth={6} />
+                <div className="flex flex-col gap-2">
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-gradient text-xs font-medium"><Bell size={13} /> Alert</button>
+                  <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Download size={13} /> PDF</button>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium btn-outline-glass"><Star size={13} /> Watch</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="sticky top-0 z-10 px-6 h-12 flex items-center gap-3"
+            style={{ background: 'rgba(11,31,32,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <h1 className="text-sm font-semibold text-primary-text truncate">{company.name}</h1>
+            <span className="text-xs text-muted-text truncate hidden sm:inline">· {company.subSector}</span>
+            {issuerScore && (
+              <span className="ml-auto shrink-0 text-[11px] font-mono-nums font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.25)' }}
+                title="Fundamental Score (Issuer)">
+                {issuerScore.score}/{issuerScore.max}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* No report → placeholder */}
         {!report && (
@@ -343,7 +381,7 @@ export const CompanyPage: React.FC = () => {
         )}
 
         {report && (
-          <div className="p-6 max-w-4xl">
+          <div className="p-6 max-w-5xl mx-auto w-full">
 
             {/* ── OVERVIEW ── */}
             {section === 'overview' && (
@@ -353,18 +391,22 @@ export const CompanyPage: React.FC = () => {
 
                 <h2 className="text-base font-semibold text-primary-text mb-5">Overview</h2>
 
-                {/* KPI cards (latest from financials) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-7">
+                {/* KPI cards (latest from financials) — 8 compact */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 mb-7">
                   <MetricCard label="On-book AUM" value={latest(report.financials.assetQuality, 'On-book AUM')} unit="₹ Cr" />
-                  <MetricCard label="GNPA (latest)" value={latest(report.financials.assetQuality, 'GNPA')} />
+                  <MetricCard label="GNPA" value={latest(report.financials.assetQuality, 'GNPA')} />
+                  <MetricCard label="NNPA" value={latest(report.financials.assetQuality, 'NNPA')} />
                   <MetricCard label="Total CAR" value={latest(report.financials.capitalization, 'Total CAR')} />
+                  <MetricCard label="Leverage" value={latestAny(report.financials.capitalization, ['Leverage', 'Gearing'])} />
+                  <MetricCard label="NIM" value={latestAny(report.financials.profitability, ['NIM', 'Net Interest Margin'])} />
                   <MetricCard label="NCD YTM" value={report.yieldOverview.currentYtm.toFixed(2)} unit="%" highlight />
+                  <MetricCard label="External Rating" value={company.externalRating.split(' ')[0]} />
                 </div>
 
                 {/* Highlight cards */}
                 <div className="grid sm:grid-cols-2 gap-4 mb-7">
                   <div className="glass-card p-5" style={{ borderColor: 'rgba(45,212,191,0.2)' }}>
-                    <div className="flex items-center gap-2 mb-3"><Lightbulb size={16} style={{ color: '#2DD4BF' }} /><h3 className="font-semibold text-primary-text text-sm">Why this recommendation</h3></div>
+                    <div className="flex items-center gap-2 mb-3"><Lightbulb size={16} style={{ color: '#2DD4BF' }} /><h3 className="font-semibold text-primary-text text-sm">What's comforting?</h3></div>
                     <ul className="space-y-2">
                       {report.recommendationRationale.map(r => (
                         <li key={r} className="flex gap-2 text-xs text-muted-text leading-relaxed">
