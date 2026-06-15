@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, BookOpen, Activity, Bot, Gauge, FileText, Database, Sparkles } from 'lucide-react';
+import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, Bot, Gauge, FileText, Database, Sparkles, Check } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { Sparkline } from '../components/Sparkline';
@@ -106,16 +106,9 @@ const features = [
 ];
 
 const steps = [
-  { n: '01', title: 'Search your issuer', body: 'Find any NBFC or bond issuer in our coverage universe by name, ISIN, or rating.' },
+  { n: '01', title: 'Search your target company', body: 'Find any NBFC or bond issuer in our coverage universe by name, ISIN, or rating.' },
   { n: '02', title: 'Read the full report', body: 'Access the scorecard, financials deep-dive, ownership breakdown, and our proprietary recommendation.' },
   { n: '03', title: 'Monitor in your portfolio', body: 'Add to your watchlist. Get alerted when the Fundamental Score moves or material news breaks.' },
-];
-
-const valueChips = [
-  { icon: BookOpen, label: 'Fundamental research' },
-  { icon: Activity, label: 'Real-time Fundamental Score' },
-  { icon: BarChart2, label: 'Financial & non-financial database' },
-  { icon: Bot, label: 'Interactive AI bot' },
 ];
 
 export const Landing: React.FC = () => {
@@ -170,45 +163,46 @@ export const Landing: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#2DD4BF' }}></span>
               Now covering 4 NBFC issuers · More launching soon
             </div>
-            <h1 className="font-serif text-3xl lg:text-[2.6rem] font-semibold text-primary-text leading-[1.15] mb-4 text-glow-teal">
-              {BRAND.tagline}
+            <h1 className="font-serif text-3xl lg:text-[2.6rem] font-semibold text-primary-text leading-[1.15] mb-4">
+              Investors' assessment of the company's fundamental strength, magnified through{' '}
+              <span className="font-bold tracking-tight"><span className="text-primary-text">Fundamental</span><span className="text-brand-teal" style={{ textShadow: '0 0 16px rgba(45,212,191,0.5)' }}>Lens</span></span>{' '}in real-time.
             </h1>
-            <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed mb-3">
-              Access institutional-grade fundamental research, a real-time Fundamental Score, financial &amp; non-financial database, and an interactive AI bot with a single click.
-            </p>
             <p className="text-sm text-muted-text font-normal leading-relaxed mb-5">
               A structured, financial-model-driven fundamental analysis — one Fundamental Score distilled from <span className="text-primary-text font-medium">119 assessment factors</span> (40 qualitative, 79 quantitative).
             </p>
 
-            {/* Value chips */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {valueChips.map(chip => (
-                <div
-                  key={chip.label}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium transition-transform duration-200 hover:-translate-y-0.5"
-                  style={{ background: 'rgba(22,52,54,0.72)', border: '1px solid rgba(255,255,255,0.10)', color: '#E9F3F1', boxShadow: '0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)', backdropFilter: 'blur(14px)' }}
-                >
-                  <chip.icon size={14} style={{ color: '#2DD4BF' }} />
-                  {chip.label}
-                </div>
+            {/* Bullets */}
+            <ul className="space-y-2.5 mb-7">
+              {[
+                "Get a complete anatomy of a company's health parameters.",
+                'No financial terminal needed.',
+                'No financial modelling degree required.',
+                'Just clear, structured, most transparent fundamental research.',
+              ].map(b => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-muted-text leading-relaxed">
+                  <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' }}>
+                    <Check size={11} strokeWidth={3} />
+                  </span>
+                  {b}
+                </li>
               ))}
-            </div>
+            </ul>
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => handleEnter('investor')}
                 className="flex items-center gap-2 px-6 py-3 rounded-lg btn-gradient text-sm"
               >
-                Explore research <ArrowRight size={16} />
+                Enter as Investor <ArrowRight size={16} />
               </button>
               <button
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => handleEnter('creator')}
                 className="flex items-center gap-2 px-6 py-3 rounded-lg text-primary-text font-semibold text-sm transition-colors"
                 style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
               >
-                See how it works
+                Enter as Research Creator
               </button>
             </div>
           </div>
@@ -295,6 +289,18 @@ export const Landing: React.FC = () => {
           <p className="text-sm font-medium text-primary-text">119 assessment factors · 40 qualitative · 79 quantitative</p>
         </div>
         <p className="t-caption text-center mt-3">A structured, financial-model-driven fundamental analysis — produced by a deterministic model and reviewed by a research analyst before publishing.</p>
+      </section>
+
+      {/* Tagline section */}
+      <section className="py-20 lg:py-24">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="font-serif text-2xl lg:text-[2rem] font-semibold text-primary-text leading-[1.2] mb-4 text-glow-teal">
+            {BRAND.tagline}
+          </h2>
+          <p className="text-base lg:text-lg text-muted-text font-normal leading-relaxed">
+            Access institutional-grade fundamental research, a real-time Fundamental Score, financial &amp; non-financial database, and an interactive AI bot with a single click.
+          </p>
+        </div>
       </section>
 
       {/* Product offerings (Phase 6.2) */}
@@ -411,29 +417,8 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Key aspects */}
-      <section id="features" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">Everything you need to evaluate fixed-income credit</h2>
-            <p className="text-muted-text max-w-xl mx-auto">No Bloomberg terminal needed. No financial modelling degree required. Just clear, honest fundamental research.</p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map(f => (
-              <div key={f.title} className="glass-card p-6 h-full transition-all duration-200">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
-                  <f.icon size={20} />
-                </div>
-                <h3 className="font-semibold text-primary-text mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-text leading-relaxed">{f.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* How it works */}
-      <section id="how-it-works" className="py-20">
+      <section id="how-it-works" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">How it works</h2>
@@ -462,19 +447,24 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section style={{ background: 'rgba(18,42,44,0.5)', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)' }} className="py-14">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="font-serif text-2xl text-primary-text/90 mb-3">
-            "The most important thing individual investors lack is access to institutional-grade fundamental research."
-          </p>
-          <p className="text-muted-text text-sm">— The founding premise of Fundamental Lens</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="mt-8 px-8 py-3.5 rounded-lg btn-gradient text-sm inline-flex items-center gap-2"
-          >
-            Get started — it's free <ArrowRight size={16} />
-          </button>
+      {/* Key aspects */}
+      <section id="features" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <h2 className="font-serif text-2xl lg:text-3xl font-semibold text-primary-text mb-3">Key aspects</h2>
+            <p className="text-muted-text max-w-xl mx-auto">A clear, structured read on every issuer — one Fundamental Score from 119 assessment factors, the full scorecard, real-time alerts and portfolio tools.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map(f => (
+              <div key={f.title} className="glass-card p-6 h-full transition-all duration-200">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
+                  <f.icon size={20} />
+                </div>
+                <h3 className="font-semibold text-primary-text mb-2">{f.title}</h3>
+                <p className="text-sm text-muted-text leading-relaxed">{f.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
