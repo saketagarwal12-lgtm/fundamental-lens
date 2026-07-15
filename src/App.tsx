@@ -15,6 +15,8 @@ import { Sectors } from './pages/investor/Sectors';
 import { SectorDetail } from './pages/investor/SectorDetail';
 import { UnderwritingFlow } from './pages/UnderwritingFlow';
 import { Underwriting } from './pages/Underwriting';
+import { Architecture } from './pages/Architecture';
+import { ArchitectureMirror } from './pages/creator/ArchitectureMirror';
 import { Pipeline } from './pages/creator/Pipeline';
 import { Coverage } from './pages/creator/Coverage';
 import { SectorModels } from './pages/creator/SectorModels';
@@ -38,6 +40,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/underwriting" element={<Underwriting />} />
+        <Route path="/how-it-works/architecture" element={<Architecture />} />
 
         {/* Investor routes */}
         <Route
@@ -76,6 +79,7 @@ function AppRoutes() {
           <Route path="coverage" element={<Coverage />} />
           <Route path="sector-models" element={<SectorModels />} />
           <Route path="assess" element={<UnderwritingFlow context="creator" />} />
+          <Route path="architecture" element={<ArchitectureMirror />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

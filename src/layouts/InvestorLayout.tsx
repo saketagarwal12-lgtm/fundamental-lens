@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Search, Sparkles, Scale, Layers } from 'lucide-react';
+import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Search, Sparkles, Scale, Layers, Workflow } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { IconRail } from '../components/IconRail';
 import type { RailItem } from '../components/IconRail';
@@ -16,6 +16,7 @@ const navItems: RailItem[] = [
   { to: '/app/sectors', icon: Layers, label: 'Sectors' },
   { to: '/app/reports', icon: FileText, label: 'Reports' },
   { to: '/app/assess', icon: Sparkles, label: 'Assess private co.' },
+  { to: '/how-it-works/architecture', icon: Workflow, label: 'How it works' },
   { to: '/app/alerts', icon: Bell, label: 'Alerts' },
   { to: '/app/profile', icon: User, label: 'Profile' },
 ];

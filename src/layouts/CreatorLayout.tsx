@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { GitBranch, BookOpen, BarChart2, Settings, Sparkles } from 'lucide-react';
+import { GitBranch, BookOpen, BarChart2, Settings, Sparkles, Workflow } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { IconRail } from '../components/IconRail';
 import type { RailItem } from '../components/IconRail';
@@ -11,6 +11,7 @@ const navItems: RailItem[] = [
   { to: '/creator/coverage', icon: BookOpen, label: 'Coverage' },
   { to: '/creator/sector-models', icon: BarChart2, label: 'Sector Models' },
   { to: '/creator/assess', icon: Sparkles, label: 'Assess private co.' },
+  { to: '/creator/architecture', icon: Workflow, label: 'Architecture' },
   { to: '/creator/settings', icon: Settings, label: 'Settings' },
 ];
 
