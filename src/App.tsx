@@ -13,7 +13,8 @@ import { CompanyPage } from './pages/investor/company/CompanyPage';
 import { Compare } from './pages/investor/Compare';
 import { Sectors } from './pages/investor/Sectors';
 import { SectorDetail } from './pages/investor/SectorDetail';
-import { PrivateAssessment } from './pages/PrivateAssessment';
+import { UnderwritingFlow } from './pages/UnderwritingFlow';
+import { Underwriting } from './pages/Underwriting';
 import { Pipeline } from './pages/creator/Pipeline';
 import { Coverage } from './pages/creator/Coverage';
 import { SectorModels } from './pages/creator/SectorModels';
@@ -36,6 +37,7 @@ function AppRoutes() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/underwriting" element={<Underwriting />} />
 
         {/* Investor routes */}
         <Route
@@ -56,7 +58,7 @@ function AppRoutes() {
           <Route path="reports" element={<Reports />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="profile" element={<UserProfile />} />
-          <Route path="assess" element={<PrivateAssessment />} />
+          <Route path="assess" element={<UnderwritingFlow context="investor" />} />
           <Route path="company/:id" element={<CompanyPage />} />
         </Route>
 
@@ -73,7 +75,7 @@ function AppRoutes() {
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="coverage" element={<Coverage />} />
           <Route path="sector-models" element={<SectorModels />} />
-          <Route path="assess" element={<PrivateAssessment />} />
+          <Route path="assess" element={<UnderwritingFlow context="creator" />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

@@ -146,6 +146,7 @@ export const Landing: React.FC = () => {
             <a href="#offerings" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">What you get</a>
             <a href="#who" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">Who it's for</a>
             <a href="#how-it-works" className="hidden sm:inline text-sm font-medium text-muted-text hover:text-primary-text transition-colors">How it works</a>
+            <button onClick={() => navigate('/underwriting')} className="hidden sm:inline text-sm font-medium text-brand-teal hover:text-primary-text transition-colors">Underwriting</button>
             <button
               onClick={() => setShowModal(true)}
               className="px-4 py-2 rounded-lg btn-gradient text-sm"
