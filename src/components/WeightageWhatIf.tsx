@@ -65,7 +65,7 @@ export const WeightageWhatIf: React.FC<{ report: CompanyReport }> = ({ report })
           <h3 className="t-h3 text-primary-text">Adjust weightage</h3>
         </div>
         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.3)' }}>
-          Upgraded plan
+          Premium · HNI
         </span>
       </div>
       <p className="t-caption mb-4">Re-weights the existing component grades to a what-if score. It does not re-score the issuer.</p>

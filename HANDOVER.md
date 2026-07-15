@@ -54,15 +54,20 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 
 | Path | What |
 |---|---|
-| `/` | Landing + login (role picker) |
+| `/` | Landing + login (role picker); deck-narrative marketing sections |
+| `/underwriting` | **Standalone white-label underwriting flow** (public, branded chrome) |
+| `/how-it-works/architecture` | **Architecture · flywheel · lineage · point-in-time** (public explainer) |
 | `/app/dashboard` | Investor monitoring dashboard (default) |
 | `/app/portfolio-score` | Portfolio Fundamental Score |
+| `/app/compare` | **Peer comparison** — 2–4 issuers side by side (`?issuer=<id>` deep-link) |
+| `/app/sectors` · `/app/sector/:id` | **Sector index + sector detail** (leaderboard, aggregates, outlook) |
 | `/app/watchlist`, `/app/reports`, `/app/alerts`, `/app/profile` | Lighter investor pages |
-| `/app/assess` | Private-company assessment (AI-RM mock flow) |
+| `/app/assess` | Underwriting flow (investor mirror of `/underwriting`) |
 | `/app/company/:id` | **Company research page** (the core surface) |
 | `/creator/pipeline` | Creator pipeline (default) |
 | `/creator/coverage`, `/creator/sector-models`, `/creator/settings` | Creator back-office |
-| `/creator/assess` | Private-company assessment (creator mirror) |
+| `/creator/assess` | Underwriting flow (creator mirror) |
+| `/creator/architecture` | Architecture / flywheel / lineage (creator mirror) |
 
 Auth is in-memory (`src/contexts/AuthContext.tsx`): choosing a role on the landing logs you in;
 a **full browser reload logs you out** (state is not persisted). Role-guarded routes redirect.
@@ -107,6 +112,14 @@ There is no extraction/parsing/scoring logic in the app.
   A bottom `Object.entries(reports).forEach(...)` attaches the mock real-time data layer
   (`LISTINGS`, `PRICE_SERIES`, `dataSourcesFor`, `SIGNALS`, `FIN_NOTES` quarterly/outlook).
 - **`portfolio.ts`** — `portfolioHoldings[]` seeded with real differing numbers.
+- **`sectors.ts`** (new) — derives, from `reports.ts`/`companies.ts`, per-issuer metrics
+  (`issuerMetrics`: Fundamental Score /200, pillar grades, the 10 issuer factors, key ratios,
+  yield) and sector aggregates (`sectorAggregate`, `allSectorAggregates`, `sectorSignals`,
+  `sectorOutlookProse`). Powers `/app/compare` and `/app/sectors`. No re-scoring — reads
+  authored outputs only. `RATIOS` defines the comparable ratio set + best-direction.
+- **`underwriting.ts`** (new) — mock white-label underwriting fixtures: borrower fixtures,
+  scripted `intake`, pre-authored `DraftAssessment` (the model output — never computed in-app),
+  `MODEL_VERSION`, `PILLAR_STEPS`, `PROOF_POINTS`. Powers the underwriting flow.
 - **`score.ts`** — score helpers: `getScaledScore(report)` (parses `ratingScale` ×100 into
   components incl. issuer/issuance/pricing/economic), `getIssuerTrend(id)` (/200 monthly series),
   `getPortfolioScore(holdings)` (holding-average issuer /200), `gradeForPct`, `scoreBand`, `toSeries500`.
@@ -145,6 +158,24 @@ There is no extraction/parsing/scoring logic in the app.
   client-side "Adjust weightage" what-if (re-weights existing grades; never re-scores).
 - **`YieldGauge`**, **`PeerYieldRange`**, **`CovenantTable`**, **`MetricCard`**, **`Sparkline`**
   (now supports `width`/`height`/`strokeWidth`), **`GradeBadge`**, **`ScoreRing`**, **`useCountUp`**.
+- **`RatingLens`** — agency letter (input) → Fundamental Score by four weighted pillars (product).
+  Used on the landing "See inside the rating" band and the company-page External Ratings section.
+
+### New pages / flows (the 2026 deck-narrative upgrade)
+- **`pages/LandingSections.tsx`** — the deck-narrative landing sections (see-inside-the-rating,
+  problem before→after, built-for-credit, mid/small-cap gap, competitive landscape, market &
+  tailwinds Recharts bar, roadmap rings, tiering ladder). Imported into `Landing.tsx` in order.
+- **`pages/investor/Compare.tsx`** — `/app/compare` peer-compare grid (reuses `ScoreGauge`,
+  `ScoreComposition`, `YieldGauge`, `GradeBadge`, `FactorHeatmap` tinting; best/worst highlighting).
+- **`pages/investor/Sectors.tsx`** + **`SectorDetail.tsx`** — sector index & detail.
+- **`pages/UnderwritingFlow.tsx`** — shared 5-stage flow (Invite → Capture → Assess → Deliver →
+  Decide) with stepper, proof-point chips, branded-by header, animated sealed engine, decision-ready
+  file and human sign-off with audit stamp. `pages/Underwriting.tsx` wraps it for the standalone
+  `/underwriting` route; `/app/assess` + `/creator/assess` render it via `context`. (Replaces the
+  old `PrivateAssessment.tsx`, now deleted.)
+- **`pages/ArchitecturePanels.tsx`** — `DataFlywheel`, `SixLayerArchitecture`, `DataLineage`,
+  `PointInTime`. Rendered by `pages/Architecture.tsx` (public) and
+  `pages/creator/ArchitectureMirror.tsx`.
 
 ---
 
