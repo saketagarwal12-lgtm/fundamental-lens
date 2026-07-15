@@ -719,8 +719,17 @@ export const CompanyPage: React.FC = () => {
             {/* ── PEER COMPARISON ── */}
             {section === 'peers' && (
               <div>
-                <h2 className="text-base font-semibold text-primary-text mb-2">Peer Comparison</h2>
-                <p className="text-sm text-muted-text mb-5">This issue's current NCD ({report.yieldOverview.currentYtm.toFixed(2)}% YTM) vs the {subSectorLabel} peer set.</p>
+                <div className="flex items-start justify-between gap-3 flex-wrap mb-2">
+                  <h2 className="text-base font-semibold text-primary-text">Peer Comparison</h2>
+                  <button
+                    onClick={() => navigate(`/app/compare?issuer=${company.id}`)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                    style={{ background: 'rgba(45,212,191,0.1)', color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.25)' }}
+                  >
+                    <Scale size={13} /> Compare side by side
+                  </button>
+                </div>
+                <p className="text-sm text-muted-text mb-5">This issue's current NCD ({report.yieldOverview.currentYtm.toFixed(2)}% YTM) vs the {subSectorLabel} peer set. Open the full side-by-side comparison to line up scores, factors and ratios against covered peers.</p>
                 <PeerYieldRange peers={report.peers} thisIssuer={firstName} thisYtm={report.yieldOverview.currentYtm} thisRating={company.externalRating.split(' ')[0]} />
               </div>
             )}

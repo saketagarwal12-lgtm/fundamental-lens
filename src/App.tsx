@@ -10,6 +10,7 @@ import { Reports } from './pages/investor/Reports';
 import { Alerts } from './pages/investor/Alerts';
 import { UserProfile } from './pages/investor/UserProfile';
 import { CompanyPage } from './pages/investor/company/CompanyPage';
+import { Compare } from './pages/investor/Compare';
 import { PrivateAssessment } from './pages/PrivateAssessment';
 import { Pipeline } from './pages/creator/Pipeline';
 import { Coverage } from './pages/creator/Coverage';
@@ -47,6 +48,7 @@ function AppRoutes() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="portfolio-score" element={<PortfolioScore />} />
           <Route path="watchlist" element={<Watchlist />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="reports" element={<Reports />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="profile" element={<UserProfile />} />
