@@ -1,6 +1,6 @@
 import type { Grade } from './types';
 import type { Recommendation } from './types';
-import type { CompanyReport, FundingMixSlice } from './reports';
+import type { CompanyReport, FundingMixSlice, Signal } from './reports';
 import { reports } from './reports';
 import { companies } from './companies';
 import { getScaledScore, getIssuerTrend } from './score';
@@ -186,3 +186,31 @@ export const sectorAggregate = (sector: SectorId): SectorAggregate => {
 
 export const allSectorAggregates = (): SectorAggregate[] =>
   SECTORS.map(s => sectorAggregate(s.id)).filter(a => a.count > 0);
+
+// ── Sector-level signals feed (consolidated from members' authored signals) ────
+
+export const sectorSignals = (sector: SectorId): Signal[] => {
+  const members = issuersInSector(sector);
+  const merged: Signal[] = [];
+  // Interleave: take the most recent from each member in turn so the feed reads as
+  // a sector-wide stream rather than one issuer at a time.
+  const perMember = members.map(m => {
+    const r = reports[m.id];
+    return { name: m.shortName, sigs: (r.signals ?? []) };
+  });
+  const maxLen = Math.max(0, ...perMember.map(p => p.sigs.length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const p of perMember) {
+      const s = p.sigs[i];
+      if (s) merged.push({ ...s, text: `${p.name}: ${s.text}` });
+    }
+  }
+  return merged;
+};
+
+// Consolidated outlook prose for the sector (members share the sub-sector write-up).
+export const sectorOutlookProse = (sector: SectorId): { operating: string; subSector: string } => {
+  const members = issuersInSector(sector);
+  const r = members.length ? reports[members[0].id] : undefined;
+  return r ? r.sectorOutlook : { operating: '', subSector: '' };
+};
