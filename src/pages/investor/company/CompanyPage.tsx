@@ -20,9 +20,11 @@ import { SignalsFeed } from '../../../components/SignalsFeed';
 import { WeightageWhatIf } from '../../../components/WeightageWhatIf';
 import { ExpandableAnalysis } from '../../../components/ExpandableAnalysis';
 import { ScorecardTable } from '../../../components/ScorecardTable';
+import { RatingLens } from '../../../components/RatingLens';
+import type { RatingLensPillar } from '../../../components/RatingLens';
 import { companies } from '../../../data/companies';
 import { getReport } from '../../../data/reports';
-import { getScaledScore } from '../../../data/score';
+import { getScaledScore, getIssuerTrend } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
 import type { FinancialSection } from '../../../data/krazybee';
 
@@ -726,7 +728,38 @@ export const CompanyPage: React.FC = () => {
             {/* ── EXTERNAL RATINGS ── */}
             {section === 'external' && (
               <div>
-                <h2 className="text-base font-semibold text-primary-text mb-5">External Ratings</h2>
+                <h2 className="text-base font-semibold text-primary-text mb-2">External Ratings</h2>
+                <p className="text-sm text-muted-text mb-5">The agency letter is an input to our assessment — see how it sits inside the Fundamental Score.</p>
+
+                {/* See inside the rating — agency letter → FL score by pillar */}
+                {(() => {
+                  const scaled = getScaledScore(report);
+                  const byKey = (k: string) => scaled.components.find(c => c.key === k)!;
+                  const iss = byKey('issuer');
+                  const trend = getIssuerTrend(company.id);
+                  const delta = trend.length >= 2 ? trend[trend.length - 1].score - trend[0].score : undefined;
+                  const lensPillars: RatingLensPillar[] = [
+                    { label: 'Issuer fundamentals', pct: iss.pct, weight: 40, grade: iss.grade },
+                    { label: 'Pricing & yield', pct: byKey('pricing').pct, weight: 30, grade: byKey('pricing').grade },
+                    { label: 'Issuance assessment', pct: byKey('issuance').pct, weight: 20, grade: byKey('issuance').grade },
+                    { label: 'Economic & sector', pct: byKey('economic').pct, weight: 10, grade: byKey('economic').grade },
+                  ];
+                  return (
+                    <div className="mb-5">
+                      <RatingLens
+                        agency={report.externalRating.agency}
+                        agencyLetter={report.externalRating.rating.split(' ')[0]}
+                        agencyNote="one letter · quarterly · issuer-paid"
+                        score={iss.score}
+                        max={iss.max}
+                        delta={delta}
+                        pillars={lensPillars}
+                        compact
+                      />
+                    </div>
+                  );
+                })()}
+
                 <div className="glass-card p-6 mb-4">
                   <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                     <div>

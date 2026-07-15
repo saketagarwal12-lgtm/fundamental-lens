@@ -6,6 +6,10 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import { Sparkline } from '../components/Sparkline';
 import { BRAND } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  SeeInsideTheRating, InterrogateTheRating, BuiltForCredit, MidSmallCapGap,
+  CompetitiveLandscape, MarketTailwinds, Roadmap, TieringLadder,
+} from './LandingSections';
 
 // ── Phase 6.2 — Product offerings ────────────────────────────────────────────
 const offerings = [
@@ -303,6 +307,13 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
+      {/* ── Deck narrative (slides 8, 2, 9, 4, 12) ── */}
+      <SeeInsideTheRating />
+      <InterrogateTheRating />
+      <BuiltForCredit />
+      <MidSmallCapGap />
+      <CompetitiveLandscape />
+
       {/* Product offerings (Phase 6.2) */}
       <section id="offerings" className="py-20 lg:py-24" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(18,42,44,0.3)' }}>
         <div className="max-w-6xl mx-auto px-6">
@@ -360,6 +371,8 @@ export const Landing: React.FC = () => {
               </div>
             ))}
           </div>
+          {/* Tiering ladder — free teaser → paid → HNI/premium */}
+          <TieringLadder />
         </div>
       </section>
 
@@ -467,6 +480,10 @@ export const Landing: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ── Deck narrative (slides 17, 18) ── */}
+      <MarketTailwinds />
+      <Roadmap />
 
       {/* Disclaimer band */}
       <div className="py-5 px-6" style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(10,25,27,0.5)' }}>
