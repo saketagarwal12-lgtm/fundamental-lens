@@ -45,8 +45,13 @@ npm run build    # tsc + vite build (CI gate — keep it green)
 
 On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 
-> Note: `tsconfig` runs with `noUnusedLocals`, so unused imports/vars **fail the build**. Always
-> `npm run build` before committing.
+> **Correction (verified against `tsconfig.json`):** `noUnusedLocals` and `noUnusedParameters` are
+> both **`false`** — an unused import does *not* fail the build, contrary to what this file and the
+> upgrade prompts have long claimed. What the gate actually enforces is **`strict: true`** (plus
+> `noFallthroughCasesInSwitch`), so the real failure mode is type errors — e.g. Recharts' `Tooltip`
+> `formatter`, whose `ValueType` is `string | number | (string|number)[]` and will reject a
+> `(v: number) => …` annotation. Still run `npm run build` before every commit; just don't go
+> hunting for unused-import failures that cannot happen. Keep imports tidy on principle.
 
 ---
 
@@ -65,6 +70,7 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 | `/app/assess` | Underwriting flow (investor mirror of `/underwriting`) |
 | `/app/company/:id` | **Company research page** (the core surface); Tier-2 has an **Active ISINs** tab |
 | `/app/isin/:isin` | **ISIN-level analysis** — Fundamental (shared) + Issuance + Pricing + Economic |
+| `/app/covenants` | **Portfolio covenant monitor** — every covenant across held ISINs, worst-headroom first |
 | `/creator/pipeline` | Creator pipeline (default) |
 | `/creator/coverage`, `/creator/sector-models`, `/creator/settings` | Creator back-office |
 | `/creator/assess` | Underwriting flow (creator mirror) |
@@ -149,6 +155,13 @@ two ISINs of one issuer share a Fundamental Score but can differ on Total.
   (resolves a `schedule` at an `asOf` 'YYYY-MM'), `nextStep`, `covenantHeadroomSeries`,
   `covenantWorstBuffer`, `AS_OF = '2026-06'`.
 - **`peers.ts`** — §K5 peer universe. Market-reference comparators only; **no Fundamental Score**.
+- **`covenantMonitor.ts`** — portfolio-wide covenant rows + derived alerts.
+  `covenantRowsWorstFirst(scope)` (scope `'holdings'` = ISINs of `portfolioHoldings`, `'all'` = every
+  ISIN) keys each row on its **tightest** condition and sorts Breach → Tight → Moderate →
+  Comfortable, then by buffer, with compliance flags last. `covenantAlerts(scope)` raises an alert
+  on **Breach or Tight**; `covenantSignalsForIssuer(id)` re-expresses those as `Signal[]` so the
+  existing `SignalsFeed` carries them (added a `'Covenant'` `SignalType` + `ShieldAlert` icon).
+  All derived live — nothing authored into a feed.
 
 **Additive contract (do not break):** `isins[]` is opt-in per issuer. Only **Midland, Avanti,
 Keertana** have authored ISINs. **KrazyBee and Spandana stay issuer-only** — `getImplicitIsin`
@@ -214,6 +227,23 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
   action. Falls back to the single implicit ISIN for issuer-only entities.
 - **`IllustrativeBadge`** / **`IllustrativeNotice`** — the §K4 fabricated-ISIN markers. Use these
   **anywhere** the illustrative ISIN can appear (page, panel, search, comparison).
+- **`CovenantMonitor`** — the live covenant table. Columns: Covenant · Condition · Threshold
+  (+ schedule step) · Latest actual · Buffer (abs + % + `BufferBar`) · Status · Headroom
+  (`Sparkline`) · Quality. Handles multi-condition covenants (`rowSpan` + "both must hold"),
+  affirmative/status covenants (compliance flag, no buffer), and indicative proxies. Expand →
+  authored `qualityNote` + `CovenantHeadroomChart` per condition + source clause + consequence.
+- **`CovenantStatusChip`** — Breach `#E11D48` · Tight ≤10% `#FB7185` · Moderate ≤25% `#FBBF24` ·
+  Comfortable >25% `#2DD4BF`. **Computed**, not authored.
+- **`BufferBar`** — remaining headroom as a bar (capped at 100%; hatched when breached).
+- **`CovenantHeadroomChart`** — Recharts actual-vs-threshold. The threshold is drawn as a
+  **`stepAfter` line** (not a flat `ReferenceLine`) when the covenant has a schedule, so a
+  step-down covenant isn't misdrawn as always having been at today's level; a flat `ReferenceLine`
+  is used when it doesn't. Breached points are marked in `#E11D48`.
+
+> **The distinction the whole surface exists to make:** *quality* (authored — how protective the
+> threshold is) and *headroom* (computed — how far the actual is from breach) are different and
+> usually **inverse**. Keertana `…07220` Gearing is Strong quality with only 14.2% buffer;
+> its NNPA/net-worth covenant is Weak quality with 70.8% buffer. Don't "fix" that as a bug.
 - **`ScoreGauge`** — circular /N gauge, teal→cyan gradient, count-up; right-sized centred number +
   smaller suffix/band line.
 - **`ScoreTrend`** — area trend with segmented 3M/6M/12M/All pill; optional **dual-axis share-price**
@@ -356,9 +386,20 @@ issuer paused at Gaps with a gap-resolution panel) · Coverage (+ add-coverage f
       comparison slice.
 - [ ] `/app/search?q=` (the optional standalone results page) was not built — search is
       autocomplete-only from the two layouts + the dashboard hero.
-- [ ] The ISIN page's covenant table is an inline first cut. The covenant-monitoring slice should
-      extract it into `<CovenantMonitor>` and add status chips, buffer bars, headroom sparklines
-      and the expand-to-chart, then reuse it here.
+- [x] ~~The ISIN page's covenant table is an inline first cut~~ — now `<CovenantMonitor>`.
+- [ ] **No covenant currently breaches.** The alert path fires on Breach *or* Tight; today only one
+      row is Tight (Keertana illustrative `INE0NES07162` security cover, 1.18x vs a 1.15x floor →
+      2.6% headroom), so that is the only live alert. The **Breach** branch is unexercised by the
+      seed — the one real breach is *historical* (Avanti GNPA 12.01% vs an 8% covenant in FY23) and
+      shows as a red point in the headroom chart. Don't manufacture a breach to demo it; seed one
+      from a real KID if a breach demo is needed.
+- [ ] `/app/covenants` defaults to **My holdings**. Avanti — the richest covenant fixture (8
+      covenants: schedule, multi-condition, indicative proxy, affirmative + status) — **is not a
+      portfolio holding**, so it only appears under the **All coverage** toggle. Add Avanti to
+      `portfolioHoldings` if the default view should show it.
+- [ ] KrazyBee/Spandana covenants come from the legacy `report.covenants` via `getImplicitIsin`,
+      which has no conditions/actuals — they render as compliance flags only and can't be
+      monitored. Author conditions if they need real headroom tracking.
 
 **Reconcile between the legacy report and the new ISIN layer** (both intentionally left as-is by
 the additive restructure — pick one source of truth before go-live):

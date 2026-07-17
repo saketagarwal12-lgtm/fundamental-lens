@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, ShieldCheck, Scale, AlertTriangle, Globe, Layers, Gavel, Coins,
+  ArrowLeft, Building2, ShieldCheck, Scale, AlertTriangle, Globe, Layers, Coins,
 } from 'lucide-react';
 import { ScoreGauge } from '../../components/ScoreGauge';
 import { ScoreComposition } from '../../components/ScoreComposition';
@@ -11,6 +11,7 @@ import { YieldGauge } from '../../components/YieldGauge';
 import { PeerYieldRange } from '../../components/PeerYieldRange';
 import { IllustrativeBadge, IllustrativeNotice } from '../../components/IllustrativeBadge';
 import { ActiveIsinsPanel } from '../../components/ActiveIsinsPanel';
+import { CovenantMonitor } from '../../components/CovenantMonitor';
 import { companies } from '../../data/companies';
 import { getReport } from '../../data/reports';
 import type { PeerRow } from '../../data/reports';
@@ -21,7 +22,6 @@ import {
   getIsinAssessment, getIsinScore, getIsinComponents, getIsinScorecard,
   getIssuerFundamental, getIssuerEconomic,
 } from '../../data/isins';
-import { covenantBuffer, latestActual, activeThreshold, covenantStatus, COVENANT_STATUS_COLOUR, nextStep } from '../../data/covenants';
 
 // ── Small building blocks ────────────────────────────────────────────────────
 
@@ -289,87 +289,9 @@ export const IsinPage: React.FC = () => {
               </div>
             )}
 
-            {/* Financial covenants — the §3 monitor lands here */}
+            {/* Financial covenants — live monitor */}
             {a.issuance && a.issuance.covenants.length > 0 && (
-              <div className="glass-card p-5">
-                <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-primary-text flex items-center gap-2">
-                    <Gavel size={14} className="text-brand-teal" /> Financial covenants
-                  </h3>
-                  <span className="text-[11px] text-muted-text">{a.issuance.covenants.length} covenants monitored</span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-left" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium">Covenant</th>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium">Condition</th>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium text-right">Threshold</th>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium text-right">Latest</th>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium text-right">Buffer</th>
-                        <th className="pb-2 pr-3 t-eyebrow font-medium">Status</th>
-                        <th className="pb-2 t-eyebrow font-medium">Quality</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {a.issuance.covenants.map(cov =>
-                        cov.conditions.length === 0 ? (
-                          <tr key={cov.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td className="py-2.5 pr-3 text-primary-text font-medium align-top">{cov.name}</td>
-                            <td className="py-2.5 pr-3 text-muted-text align-top" colSpan={5}>{cov.statusText}</td>
-                            <td className="py-2.5 align-top"><GradeBadge grade={cov.qualityGrade} compact /></td>
-                          </tr>
-                        ) : (
-                          cov.conditions.map((c, ci) => {
-                            const la = latestActual(c);
-                            const r = covenantBuffer(c, la?.value ?? null);
-                            const st = covenantStatus(r.bufferPct, r.breached);
-                            const step = nextStep(c);
-                            return (
-                              <tr key={`${cov.id}-${ci}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td className="py-2.5 pr-3 text-primary-text font-medium align-top">{ci === 0 ? cov.name : ''}</td>
-                                <td className="py-2.5 pr-3 text-muted-text align-top">
-                                  {c.metric}
-                                  {c.indicative && (
-                                    <span className="ml-1.5 text-[9px] font-semibold px-1 py-0.5 rounded" style={{ background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }} title={c.indicativeNote}>
-                                      indicative
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-2.5 pr-3 text-right font-mono-nums text-primary-text align-top">
-                                  {activeThreshold(c) != null ? `${c.op === 'gte' ? '≥' : c.op === 'lte' ? '≤' : '='} ${activeThreshold(c)}${c.unit}` : '—'}
-                                  {step && <span className="block text-[9px] text-muted-text">→ {step.threshold}{c.unit} {step.label}</span>}
-                                </td>
-                                <td className="py-2.5 pr-3 text-right font-mono-nums text-primary-text align-top">
-                                  {la ? `${la.value}${c.unit}` : <span className="text-muted-text">no data</span>}
-                                </td>
-                                <td className="py-2.5 pr-3 text-right font-mono-nums align-top" style={{ color: r.breached ? '#E11D48' : '#9CB3B1' }}>
-                                  {r.buffer != null ? `${r.buffer > 0 ? '+' : ''}${r.buffer}${c.unit}` : '—'}
-                                  {r.bufferPct != null && <span className="block text-[9px] text-muted-text">{r.bufferPct}%</span>}
-                                </td>
-                                <td className="py-2.5 pr-3 align-top">
-                                  {la ? (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `${COVENANT_STATUS_COLOUR[st]}22`, color: COVENANT_STATUS_COLOUR[st] }}>{st}</span>
-                                  ) : <span className="text-muted-text text-[10px]">—</span>}
-                                </td>
-                                <td className="py-2.5 align-top">{ci === 0 ? <GradeBadge grade={cov.qualityGrade} compact /> : null}</td>
-                              </tr>
-                            );
-                          })
-                        ),
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <p className="text-[11px] text-muted-text mt-3 leading-relaxed">
-                  <strong className="text-primary-text">Quality and headroom are not the same thing.</strong> Quality is our
-                  authored view of how protective a threshold is; buffer is arithmetic — how far the reported actual sits from
-                  breach. A loose covenant shows a large buffer precisely because it protects you less.
-                </p>
-                {a.issuance.testing && <p className="text-[11px] text-muted-text mt-2">{a.issuance.testing}</p>}
-              </div>
+              <CovenantMonitor covenants={a.issuance.covenants} testing={a.issuance.testing} />
             )}
 
             {/* Collateral + structural clauses */}

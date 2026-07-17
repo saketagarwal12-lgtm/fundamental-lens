@@ -25,6 +25,7 @@ import type { RatingLensPillar } from '../../../components/RatingLens';
 import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
 import { companies } from '../../../data/companies';
 import { getIsinsForIssuer } from '../../../data/isins';
+import { covenantSignalsForIssuer } from '../../../data/covenantMonitor';
 import { getReport } from '../../../data/reports';
 import { getScaledScore, getIssuerTrend } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
@@ -526,7 +527,8 @@ export const CompanyPage: React.FC = () => {
               <div className="space-y-5">
                 <h2 className="t-h2 text-primary-text">Data &amp; Signals</h2>
                 <DataSourcesPanel sources={report.dataSources ?? []} />
-                <SignalsFeed signals={report.signals ?? []} />
+                {/* Covenant alerts are derived live, so they lead the authored feed. */}
+                <SignalsFeed signals={[...covenantSignalsForIssuer(company.id), ...(report.signals ?? [])]} />
               </div>
             )}
 
