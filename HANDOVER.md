@@ -63,7 +63,8 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 | `/app/sectors` · `/app/sector/:id` | **Sector index + sector detail** (leaderboard, aggregates, outlook) |
 | `/app/watchlist`, `/app/reports`, `/app/alerts`, `/app/profile` | Lighter investor pages |
 | `/app/assess` | Underwriting flow (investor mirror of `/underwriting`) |
-| `/app/company/:id` | **Company research page** (the core surface) |
+| `/app/company/:id` | **Company research page** (the core surface); Tier-2 has an **Active ISINs** tab |
+| `/app/isin/:isin` | **ISIN-level analysis** — Fundamental (shared) + Issuance + Pricing + Economic |
 | `/creator/pipeline` | Creator pipeline (default) |
 | `/creator/coverage`, `/creator/sector-models`, `/creator/settings` | Creator back-office |
 | `/creator/assess` | Underwriting flow (creator mirror) |
@@ -71,6 +72,11 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 
 Auth is in-memory (`src/contexts/AuthContext.tsx`): choosing a role on the landing logs you in;
 a **full browser reload logs you out** (state is not persisted). Role-guarded routes redirect.
+
+> **Unrouted link (until the ISIN-comparison slice lands):** `ActiveIsinsPanel`'s "Compare ISINs"
+> button points at `/app/compare-isins/:issuerId`, which does not exist yet. There is no `*` child
+> inside `/app`, so it falls through to the root catch-all → `Navigate to="/"` → **and because auth
+> is in-memory, that logs the user out.** Build the route in the comparison slice, or stub it first.
 
 ---
 
@@ -199,6 +205,15 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
   content). No brand glyph (brand lives in the top bar). Shared by both workspaces.
 - **`UserMenu`** — accessible role/user dropdown (opaque, z-80, outside-click/Esc/arrow keys,
   identity + Switch + Sign out). Used in both layouts.
+- **`GlobalSearch`** — company (fuzzy: name/sector/id) **or ISIN (prefix/exact)**; grouped
+  autocomplete (Companies / Instruments), `role="combobox"`+`listbox`, ↑/↓/Enter/Esc, outside-click.
+  Company → `/app/company/:id`, ISIN → `/app/isin/:isin`. Mounted in **both layouts' top bar** and the
+  **dashboard hero**. Replaced InvestorLayout's old company-only inline search.
+- **`ActiveIsinsPanel`** — the issuer's ISINs (ISIN · coupon · YTM · residual tenor · issue size ·
+  rating · secured/senior · this-ISIN Total /500 + Rating), current highlighted, "Compare ISINs"
+  action. Falls back to the single implicit ISIN for issuer-only entities.
+- **`IllustrativeBadge`** / **`IllustrativeNotice`** — the §K4 fabricated-ISIN markers. Use these
+  **anywhere** the illustrative ISIN can appear (page, panel, search, comparison).
 - **`ScoreGauge`** — circular /N gauge, teal→cyan gradient, count-up; right-sized centred number +
   smaller suffix/band line.
 - **`ScoreTrend`** — area trend with segmented 3M/6M/12M/All pill; optional **dual-axis share-price**
@@ -252,6 +267,8 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
 
 ## 9. Company research page sections (`/app/company/:id`)
 
+**Active ISINs** (the issuer's instruments; also rendered under the no-report placeholder so a
+light-coverage issuer like Midland still exposes its ISIN) ·
 Overview (8 KPI stat cards · "What's comforting?" + "How your investment is covered" · ownership &
 product donuts · Yield Overview last) · **Scorecard** (rating scale + grouped parameter table) ·
 **Data & Signals** · **Adjust weightage** (Upgraded) · Business & Management · Financial Analysis
@@ -334,6 +351,14 @@ issuer paused at Gaps with a gap-resolution panel) · Coverage (+ add-coverage f
       anywhere it appears in comparison.
 - [ ] **Peer universe** (`peers.ts`) issuers are market-reference only — no Fundamental Score.
 - [ ] Optional: real multi-ISIN coverage for **KrazyBee / Spandana** (today: implicit ISIN).
+- [ ] **`/app/compare-isins/:issuerId` does not exist** — `ActiveIsinsPanel`'s "Compare ISINs"
+      button is a dead link that currently logs the user out (see §4). Build it in the
+      comparison slice.
+- [ ] `/app/search?q=` (the optional standalone results page) was not built — search is
+      autocomplete-only from the two layouts + the dashboard hero.
+- [ ] The ISIN page's covenant table is an inline first cut. The covenant-monitoring slice should
+      extract it into `<CovenantMonitor>` and add status chips, buffer bars, headroom sparklines
+      and the expand-to-chart, then reuse it here.
 
 **Reconcile between the legacy report and the new ISIN layer** (both intentionally left as-is by
 the additive restructure — pick one source of truth before go-live):

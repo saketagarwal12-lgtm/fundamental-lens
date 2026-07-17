@@ -1,8 +1,10 @@
 import type { Grade } from './types';
 import type { Covenant } from './covenants';
 import type { SectorId } from './sectors';
+import type { ScorecardPillar } from './krazybee';
+import type { ComponentScore } from './score';
 import { getReport, reports } from './reports';
-import { getScaledScore } from './score';
+import { getScaledScore, gradeForPct } from './score';
 
 // ── Issuer → ISINs layer (§C / §D) ───────────────────────────────────────────
 //
@@ -856,3 +858,56 @@ export const allIsins = (): IsinAssessment[] => [
   ...isins,
   ...issuerOnlyIds().map(id => getImplicitIsin(id)).filter((x): x is IsinAssessment => !!x),
 ];
+
+// ── View adapters ────────────────────────────────────────────────────────────
+// Shape the ISIN layer into the structures the existing components already take,
+// so `ScoreComposition` / `FactorHeatmap` are reused rather than reimplemented.
+// Pure mapping — no scoring.
+
+const PRICING_MAX = 150;
+
+/** The four Total Score bars for an ISIN: Fundamental + Economic shared, Issuance + Pricing ISIN-level. */
+export const getIsinComponents = (isin: string): ComponentScore[] | undefined => {
+  const a = getIsinAssessment(isin);
+  if (!a || !a.issuance || !a.pricing) return undefined;
+  const f = getIssuerFundamental(a.issuerId);
+  const e = getIssuerEconomic(a.issuerId);
+  if (!f || !e) return undefined;
+
+  const pricingPct = Math.round((a.pricing.score / PRICING_MAX) * 100);
+  return [
+    { key: 'issuer', label: 'Issuer', score: f.score, max: f.max, pct: f.pct, weightPct: 40, grade: gradeForPct(f.pct), scorecardName: ['Business & Management', 'Financial Analysis'] },
+    { key: 'issuance', label: 'Issuance', score: a.issuance.score, max: 100, pct: a.issuance.score, weightPct: 20, grade: a.issuance.grade, scorecardName: 'Issuance Assessment' },
+    { key: 'pricing', label: 'Pricing', score: a.pricing.score, max: PRICING_MAX, pct: pricingPct, weightPct: 30, grade: a.pricing.grade, scorecardName: 'Pricing' },
+    { key: 'economic', label: 'Economic & Sector', score: e.score, max: e.max, pct: e.pct, weightPct: 10, grade: e.grade, scorecardName: 'Economic & Sector Outlook' },
+  ];
+};
+
+/** The five scorecard pillars behind an ISIN's Total Score — powers the drill-down. */
+export const getIsinScorecard = (isin: string): ScorecardPillar[] | undefined => {
+  const a = getIsinAssessment(isin);
+  if (!a || !a.issuance || !a.pricing) return undefined;
+  const f = getIssuerFundamental(a.issuerId);
+  const e = getIssuerEconomic(a.issuerId);
+  if (!f || !e) return undefined;
+
+  return [
+    ...f.pillars.map(p => ({
+      name: p.label, grade: p.grade, pct: p.score,
+      factors: p.factors.map(x => ({ name: x.label, grade: x.grade, pct: x.pct })),
+    })),
+    {
+      name: 'Issuance Assessment', grade: a.issuance.grade, pct: a.issuance.score,
+      factors: a.issuance.factors.map(x => ({ name: x.label, grade: x.grade, pct: x.pct })),
+    },
+    {
+      name: 'Pricing', grade: a.pricing.grade, pct: Math.round((a.pricing.score / PRICING_MAX) * 100),
+      // PricingFactor carries a grade but no pct — fall back to the grade's fixed points (§C).
+      factors: a.pricing.factors.map(x => ({ name: x.label, grade: x.grade, pct: GRADE_POINTS[x.grade] })),
+    },
+    {
+      name: 'Economic & Sector Outlook', grade: e.grade, pct: e.pct,
+      factors: e.factors.map(x => ({ name: x.label, grade: x.grade, pct: x.pct })),
+    },
+  ];
+};

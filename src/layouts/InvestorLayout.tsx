@@ -1,12 +1,11 @@
-import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Search, Sparkles, Scale, Layers, Workflow } from 'lucide-react';
+import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Sparkles, Scale, Layers, Workflow } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { IconRail } from '../components/IconRail';
 import type { RailItem } from '../components/IconRail';
 import { UserMenu } from '../components/UserMenu';
+import { GlobalSearch } from '../components/GlobalSearch';
 import { useAuth } from '../contexts/AuthContext';
-import { companies } from '../data/companies';
 
 const navItems: RailItem[] = [
   { to: '/app/dashboard', icon: LayoutDashboard, label: 'Monitoring dashboard' },
@@ -24,18 +23,6 @@ const navItems: RailItem[] = [
 export const InvestorLayout: React.FC = () => {
   const { userName, logout } = useAuth();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [showResults, setShowResults] = useState(false);
-
-  const results = search.length > 1
-    ? companies.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.id.toLowerCase().includes(search.toLowerCase()))
-    : [];
-
-  const handleSelectCompany = (id: string) => {
-    navigate(`/app/company/${id}`);
-    setSearch('');
-    setShowResults(false);
-  };
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
@@ -57,50 +44,9 @@ export const InvestorLayout: React.FC = () => {
             <Wordmark size="md" />
           </div>
 
-          {/* Search */}
-          <div className="flex-1 relative max-w-lg">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-text pointer-events-none" />
-            <input
-              type="search"
-              placeholder="Search a company…"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setShowResults(true); }}
-              onFocus={() => setShowResults(true)}
-              onBlur={() => setTimeout(() => setShowResults(false), 150)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-lg focus:outline-none transition-colors"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#E9F3F1' }}
-            />
-            {showResults && results.length > 0 && (
-              <div
-                className="absolute top-full mt-1 left-0 right-0 rounded-lg z-50 overflow-hidden"
-                style={{ background: 'rgba(18,42,44,0.95)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}
-              >
-                {results.map(c => (
-                  <button
-                    key={c.id}
-                    onMouseDown={() => handleSelectCompany(c.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-primary-text truncate">{c.name}</p>
-                      <p className="text-xs text-muted-text">{c.sector} · {c.externalRating}</p>
-                    </div>
-                    <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                      c.recommendation === 'Subscribe' ? 'text-[#34D399]' :
-                      c.recommendation === 'Avoid' ? 'text-[#FB7185]' : 'text-[#FBBF24]'
-                    }`} style={{
-                      background: c.recommendation === 'Subscribe' ? 'rgba(52,211,153,0.15)' :
-                        c.recommendation === 'Avoid' ? 'rgba(251,113,133,0.15)' : 'rgba(251,191,36,0.15)',
-                    }}>
-                      {c.recommendation}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Search — companies and ISINs */}
+          <div className="flex-1 max-w-lg">
+            <GlobalSearch />
           </div>
 
           {/* User menu */}

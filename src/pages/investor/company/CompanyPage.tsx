@@ -5,7 +5,7 @@ import {
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
   Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
-  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3,
+  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3, Receipt,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
@@ -22,14 +22,16 @@ import { ExpandableAnalysis } from '../../../components/ExpandableAnalysis';
 import { ScorecardTable } from '../../../components/ScorecardTable';
 import { RatingLens } from '../../../components/RatingLens';
 import type { RatingLensPillar } from '../../../components/RatingLens';
+import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
 import { companies } from '../../../data/companies';
+import { getIsinsForIssuer } from '../../../data/isins';
 import { getReport } from '../../../data/reports';
 import { getScaledScore, getIssuerTrend } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
 import type { FinancialSection } from '../../../data/krazybee';
 
 type Section =
-  | 'overview' | 'scorecard' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
+  | 'overview' | 'isins' | 'scorecard' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
   | 'developments' | 'ncd' | 'sector' | 'summary' | 'ai';
 
 const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1', '#0EA5A0', '#60A5FA', '#F472B6', '#FACC15', '#94A3B8', '#22D3EE'];
@@ -178,6 +180,7 @@ export const CompanyPage: React.FC = () => {
 
   const company = companies.find(c => c.id === id);
   const report: CompanyReport | undefined = getReport(id);
+  const issuerIsins = id ? getIsinsForIssuer(id) : [];
 
   if (!company) {
     return (
@@ -209,6 +212,7 @@ export const CompanyPage: React.FC = () => {
 
   const navItems: { key: Section; label: string; icon: typeof LayoutGrid }[] = [
     { key: 'overview', label: 'Overview', icon: LayoutGrid },
+    { key: 'isins', label: 'Active ISINs', icon: Receipt },
     { key: 'scorecard', label: 'Scorecard', icon: Grid3x3 },
     { key: 'signals', label: 'Data & Signals', icon: Database },
     { key: 'weightage', label: 'Adjust weightage', icon: SlidersHorizontal },
@@ -366,10 +370,11 @@ export const CompanyPage: React.FC = () => {
           </div>
         )}
 
-        {/* No report → placeholder */}
+        {/* No report → placeholder. An issuer can still carry ISIN-level coverage
+            (Midland does), so surface its instruments rather than a dead end. */}
         {!report && (
-          <div className="p-8 text-center">
-            <div className="max-w-md mx-auto">
+          <div className="p-8">
+            <div className="max-w-md mx-auto text-center">
               <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>
                 <TrendingUp size={28} />
               </div>
@@ -379,11 +384,20 @@ export const CompanyPage: React.FC = () => {
               </p>
               <button onClick={() => navigate('/app/company/krazybee')} className="px-5 py-2.5 rounded-full btn-gradient text-sm font-semibold">View a sample full report</button>
             </div>
+
+            {issuerIsins.length > 0 && (
+              <div className="max-w-5xl mx-auto mt-10 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <ActiveIsinsPanel issuerId={company.id} />
+              </div>
+            )}
           </div>
         )}
 
         {report && (
           <div className="p-6 max-w-5xl mx-auto w-full">
+
+            {/* ── ACTIVE ISINs ── */}
+            {section === 'isins' && <ActiveIsinsPanel issuerId={company.id} />}
 
             {/* ── OVERVIEW ── */}
             {section === 'overview' && (

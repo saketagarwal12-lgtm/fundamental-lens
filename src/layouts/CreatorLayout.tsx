@@ -4,6 +4,7 @@ import { Wordmark } from '../components/Wordmark';
 import { IconRail } from '../components/IconRail';
 import type { RailItem } from '../components/IconRail';
 import { UserMenu } from '../components/UserMenu';
+import { GlobalSearch } from '../components/GlobalSearch';
 import { useAuth } from '../contexts/AuthContext';
 
 const navItems: RailItem[] = [
@@ -40,6 +41,11 @@ export const CreatorLayout: React.FC = () => {
           </div>
           <div className="hidden lg:flex items-center gap-2 ml-2">
             <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}>INTERNAL</span>
+          </div>
+
+          {/* Search — companies and ISINs (routes into the investor-side surfaces) */}
+          <div className="flex-1 max-w-md hidden md:block">
+            <GlobalSearch />
           </div>
 
           <div className="ml-auto">
