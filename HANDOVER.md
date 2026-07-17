@@ -123,6 +123,44 @@ There is no extraction/parsing/scoring logic in the app.
 - **`score.ts`** — score helpers: `getScaledScore(report)` (parses `ratingScale` ×100 into
   components incl. issuer/issuance/pricing/economic), `getIssuerTrend(id)` (/200 monthly series),
   `getPortfolioScore(holdings)` (holding-average issuer /200), `gradeForPct`, `scoreBand`, `toSeries500`.
+- **`sectors.ts`** — sector taxonomy + derived aggregates (reads `reports` + `companies`).
+- **`underwriting.ts`** — scripted borrower fixtures / intake script / draft assessments.
+
+### The issuer → ISINs layer (additive — added by the ISIN/covenant upgrade)
+
+The platform covers each **ISIN** separately. An issuer's **Fundamental Score (/200)** and
+**Economic & Sector (/50)** are *issuer-level and shared across all its ISINs*; **Issuance (/100)**,
+**Pricing (/150)** and **covenants** are *per-ISIN*. So **Total (/500) and Rating are ISIN-level** —
+two ISINs of one issuer share a Fundamental Score but can differ on Total.
+
+- **`isins.ts`** — the layer. `IsinAssessment` (terms, `issuance`, `pricing`, authored `combined`),
+  `Pillar` / `FactorScore` / `PricingFactor`, `GRADE_POINTS` (EW 20 · W 40 · M 60 · S 80 · ES 100).
+  Helpers: `getIsinsForIssuer(id)`, `getIsinAssessment(isin)`, `getIsinScore(isin)`,
+  `getIssuerFundamental(id)`, `getIssuerEconomic(id)`, `getImplicitIsin(id)`, `allIsins()`.
+- **`covenants.ts`** — `Covenant` / `CovenantCondition` + the **transparent** buffer arithmetic:
+  `covenantBuffer` (`gte`→`value−threshold`; `lte`→`threshold−value`; `eq`→`−|value−threshold|`),
+  `covenantStatus` (Breach · Tight ≤10% · Moderate ≤25% · Comfortable >25%), `activeThreshold`
+  (resolves a `schedule` at an `asOf` 'YYYY-MM'), `nextStep`, `covenantHeadroomSeries`,
+  `covenantWorstBuffer`, `AS_OF = '2026-06'`.
+- **`peers.ts`** — §K5 peer universe. Market-reference comparators only; **no Fundamental Score**.
+
+**Additive contract (do not break):** `isins[]` is opt-in per issuer. Only **Midland, Avanti,
+Keertana** have authored ISINs. **KrazyBee and Spandana stay issuer-only** — `getImplicitIsin`
+synthesizes a single ISIN from their existing report (terms from the current `issuanceStructure`,
+scores from `getScaledScore`) so ISIN-level UI works without authored data. `reports.ts`,
+`getScaledScore`, `getIssuerTrend` and `getPortfolioScore` were **not changed**.
+
+**Sealed roll-up:** `combined` is **authored, not summed**. Midland is the proof — its source
+rating scale prints Combined 3.07/5.00 while its components sum to 3.19 (the section is templated
+off Avanti). Never recompute a pillar or total.
+
+**Deviations from the upgrade prompt's §D sketch** (taken deliberately, to honour "additive"):
+- `Grade` stays the **existing spaced union** (`'Extremely Strong' | … | 'Extremely Weak'`), not
+  §D's `'ExtremelyStrong'|…` form — changing it would break every existing report and component.
+- §D's object-shaped `ratingScale` was **not** adopted; `ratingScale: RatingScaleRow[]` is
+  unchanged because `getScaledScore` (and thus `/app/compare`, `/app/sectors`) parses it.
+- Added beyond §D: `combined` (authored roll-up), `assessed` (false = lightly-seeded),
+  `implicit`, `todo[]`, and `testing`/`consequence` on `Covenant`.
 
 ### The four fully-populated issuers
 - **KrazyBee Services Ltd** — NBFC, Unsecured Personal Loans. Primary, most complete entity.
@@ -130,6 +168,27 @@ There is no extraction/parsing/scoring logic in the app.
 - **Keertana Finserv** — Gold loan (LTV buckets, by-segment GNPA).
 - **Spandana Sphoorty** — NBFC-MFI, **listed (NSE/BSE, SPANDANA)** → share-price overlay; its
   Profitability table is the full canonical 6-period (FY22–3Q26 × 15 rows) example.
+
+### Midland Microfin (light coverage — ISIN layer only)
+Added by the ISIN upgrade from §K1. It has a `companies.ts` entry and a **Fundamental Score of
+114/200** carried in `isins.ts` (`AUTHORED_FUNDAMENTAL`), but **no `reports.ts` entry** — so
+`/app/company/midland` renders through the existing coverage-pipeline placeholder, and it is
+absent from `/app/sectors` aggregates and the `/app/compare` selector (both key off
+`Object.keys(reports)`). That is expected until a full report is authored.
+
+### Seeded ISINs
+| ISIN | Issuer | State |
+|---|---|---|
+| `INE884Q07798` | Midland | Assessed; Issuance/Pricing/covenants stubbed (`TODO: Midland KID`) |
+| `INE0BNQ07154` | Avanti | Fully assessed — 8 covenants, the richest covenant fixture |
+| `INE0BNQ07105/07113/07121` | Avanti | **Lightly seeded** — terms only, `assessed: false` |
+| `INE0NES07220` | Keertana | Fully assessed — primary, 5 covenants |
+| `INE0NES07162` | Keertana | **`illustrative: true`** — fabricated, needs a visible badge everywhere |
+
+Verified via `getIsinScore`: Midland **114/200 · 61% · R7** · Avanti **102/200 · 61% · R7** ·
+Keertana primary **110/200 · 74% · R5** · Keertana illustrative **110/200 · 63% · R7**.
+The Keertana pair is the ISIN-vs-ISIN showcase: identical Fundamental (110) and Economic (32),
+diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R7).
 
 ---
 
@@ -253,6 +312,40 @@ issuer paused at Gaps with a gap-resolution panel) · Coverage (+ add-coverage f
 - **Bundle size:** single chunk > 500 kB (Recharts). Consider route-level code-splitting if it matters.
 - **Real feeds at go-live:** `priceSeries`, `dataSources`, `signals`, AI desk/RM are all mock —
   wire to live feeds/model when productionising.
+
+### Running TODO — the ISIN / covenant upgrade
+
+**Data gaps (surfaced in-app via `IsinAssessment.todo[]`, never silently filled):**
+- [ ] **Midland Issuance / Pricing / covenants** — the source report's ISIN header, Pricing section
+      and covenant table are **templated off Avanti** and are not Midland's (the Nandan Nilekani
+      covenant does not apply to it). Re-seed all three from Midland's own KID. Midland's own ISIN
+      is `INE884Q07798`.
+- [ ] **Midland external rating is inconsistent** — A-/Negative (Acuité) vs BBB/Stable (Crisil),
+      while the ISIN reference table shows A. Currently stubbed `A (TODO — conflicting sources)`.
+- [ ] **Midland Combined ≠ sum of components** (3.07 printed vs 3.19 summed) — a template artifact,
+      authored as printed. Confirm against Midland's own rating scale.
+- [ ] **Midland `established` / `hq`** are `TODO — from KID` stubs and render literally in the UI.
+- [ ] **Midland has no `reports.ts` entry** → excluded from `/app/sectors` averages and the
+      `/app/compare` selector. Author a full report to include it.
+- [ ] **Avanti secondary ISINs** `INE0BNQ07105 / 07113 / 07121` are lightly seeded (terms only);
+      `getIsinScore` correctly returns `undefined`. UI must show "not yet assessed".
+- [ ] **Keertana `INE0NES07162` is fabricated** (§K4) — only the ISIN and its 12.50% current YTM
+      are real. Must render the "Illustrative — not published research" badge on its page and
+      anywhere it appears in comparison.
+- [ ] **Peer universe** (`peers.ts`) issuers are market-reference only — no Fundamental Score.
+- [ ] Optional: real multi-ISIN coverage for **KrazyBee / Spandana** (today: implicit ISIN).
+
+**Reconcile between the legacy report and the new ISIN layer** (both intentionally left as-is by
+the additive restructure — pick one source of truth before go-live):
+- [ ] **Keertana Total diverges by surface.** `/app/compare` + `/app/sectors` read the legacy
+      `ratingScale` (3.45/5.00 · 69% · R6); the ISIN page reads §K3 (3.68/5.00 · 74% · R5).
+      Fundamental (110/200) agrees on both, so sector averages are unaffected.
+- [ ] **Instrument terms differ** between `reports.ts` and `isins.ts`: Keertana `INE0NES07220`
+      coupon (13.50 legacy vs 11.30 §K3); which Keertana ISIN is `current`; Avanti `INE0BNQ07154`
+      allotment (20 May 2026 legacy vs 26 Dec 2025 §K2). The ISIN layer follows §K.
+- [ ] **Keertana Management & Governance grade label**: `reports.ts` says `Weak` at pct 20; §K3
+      says `EW 20`. pct 20 maps to Extremely Weak under `GRADE_POINTS`. Left untouched because
+      `/app/compare`'s factor heatmap tints off the authored grade.
 
 ---
 
