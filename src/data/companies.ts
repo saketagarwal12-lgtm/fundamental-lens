@@ -78,6 +78,24 @@ export const companies: Company[] = [
     combinedScore: '3.52/5.00',
   },
   {
+    // §K1 — seeded from the ISIN layer (src/data/isins.ts), which holds its
+    // Fundamental Score (114/200) and the ISIN-level assessment. No full research
+    // report yet, so it renders as a light-coverage entity like the placeholders below.
+    id: 'midland',
+    name: 'Midland Microfin Limited',
+    sector: 'NBFC',
+    subSector: 'Microfinance (MFI)',
+    established: 'TODO — from KID',
+    hq: 'TODO — from KID',
+    externalRating: 'A (TODO — conflicting sources)',
+    ratingAgency: 'TODO — Acuité / Crisil conflict',
+    ratingDate: 'TODO',
+    recommendation: 'Neutral',
+    healthScore: 61,
+    internalRating: 7,
+    combinedScore: '3.07/5.00',
+  },
+  {
     id: 'finora',
     name: 'Finora Capital Limited',
     sector: 'NBFC',

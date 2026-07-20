@@ -1,6 +1,6 @@
 import {
   TrendingUp, TrendingDown, Minus, Banknote, AlertOctagon, FileWarning,
-  UserCog, PieChart, Scale, Gavel, Newspaper,
+  UserCog, PieChart, Scale, Gavel, Newspaper, ShieldAlert,
 } from 'lucide-react';
 import type { Signal, SignalType } from '../data/reports';
 
@@ -13,6 +13,7 @@ const ICONS: Record<SignalType, typeof Banknote> = {
   'Litigation': Scale,
   'Regulatory penalty': Gavel,
   'News': Newspaper,
+  'Covenant': ShieldAlert,
 };
 
 export const SignalsFeed: React.FC<{ signals: Signal[] }> = ({ signals }) => (

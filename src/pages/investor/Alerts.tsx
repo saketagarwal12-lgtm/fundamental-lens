@@ -1,6 +1,22 @@
-import { Bell, TrendingUp, TrendingDown, Info, AlertTriangle } from 'lucide-react';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, TrendingUp, TrendingDown, Info, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { covenantAlerts } from '../../data/covenantMonitor';
+import { AS_OF } from '../../data/covenants';
 
-const alerts = [
+interface AlertItem {
+  id: number | string;
+  type: string;
+  issuer: string;
+  date: string;
+  title: string;
+  body: string;
+  read: boolean;
+  /** Covenant alerts deep-link to the instrument that raised them. */
+  isin?: string;
+}
+
+const authoredAlerts: AlertItem[] = [
   {
     id: 1,
     type: 'score_up',
@@ -54,6 +70,8 @@ const icons = {
   material: Info,
   rating: Bell,
   governance: AlertTriangle,
+  covenant_breach: ShieldAlert,
+  covenant_tightening: ShieldAlert,
 };
 
 const iconStyles: Record<string, React.CSSProperties> = {
@@ -62,9 +80,31 @@ const iconStyles: Record<string, React.CSSProperties> = {
   material: { background: 'rgba(45,212,191,0.15)', color: '#2DD4BF' },
   rating: { background: 'rgba(255,255,255,0.07)', color: '#9CB3B1' },
   governance: { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' },
+  covenant_breach: { background: 'rgba(225,29,72,0.15)', color: '#E11D48' },
+  covenant_tightening: { background: 'rgba(251,113,133,0.15)', color: '#FB7185' },
 };
 
+// The covenant monitor raises its own alerts: derived live from reported actuals
+// against covenanted thresholds, not authored into the feed above.
+const asOfLabel = `${AS_OF.slice(5)}/${AS_OF.slice(0, 4)}`;
+
 export const Alerts: React.FC = () => {
+  const navigate = useNavigate();
+
+  const alerts = useMemo<AlertItem[]>(() => [
+    ...covenantAlerts('holdings').map(a => ({
+      id: a.id,
+      type: `covenant_${a.severity}`,
+      issuer: `${a.issuerName} · ${a.isin}`,
+      date: asOfLabel,
+      title: a.title,
+      body: a.body,
+      read: false,
+      isin: a.isin,
+    })),
+    ...authoredAlerts,
+  ], []);
+
   const unread = alerts.filter(a => !a.read).length;
 
   return (
@@ -89,7 +129,8 @@ export const Alerts: React.FC = () => {
           return (
             <div
               key={a.id}
-              className="glass-card p-5 flex gap-4"
+              onClick={a.isin ? () => navigate(`/app/isin/${a.isin}`) : undefined}
+              className={`glass-card p-5 flex gap-4 ${a.isin ? 'cursor-pointer' : ''}`}
               style={!a.read ? { borderColor: 'rgba(45,212,191,0.2)', background: 'rgba(45,212,191,0.05)' } : {}}
             >
               <div

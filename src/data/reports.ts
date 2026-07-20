@@ -127,7 +127,10 @@ export interface DataSource {
 }
 export type SignalType =
   | 'Debt raised' | 'Default / delay' | 'Auditor change' | 'Management change'
-  | 'Shareholding change' | 'Litigation' | 'Regulatory penalty' | 'News';
+  | 'Shareholding change' | 'Litigation' | 'Regulatory penalty' | 'News'
+  // Raised by the covenant monitor (derived live from reported actuals vs thresholds),
+  // not authored into SIGNALS below. See data/covenantMonitor.ts.
+  | 'Covenant';
 export interface Signal {
   date: string;
   type: SignalType;
