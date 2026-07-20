@@ -12,6 +12,7 @@ import { UserProfile } from './pages/investor/UserProfile';
 import { CompanyPage } from './pages/investor/company/CompanyPage';
 import { IsinPage } from './pages/investor/IsinPage';
 import { Covenants } from './pages/investor/Covenants';
+import { CompareIsins } from './pages/investor/CompareIsins';
 import { Compare } from './pages/investor/Compare';
 import { Sectors } from './pages/investor/Sectors';
 import { SectorDetail } from './pages/investor/SectorDetail';
@@ -67,6 +68,7 @@ function AppRoutes() {
           <Route path="company/:id" element={<CompanyPage />} />
           <Route path="isin/:isin" element={<IsinPage />} />
           <Route path="covenants" element={<Covenants />} />
+          <Route path="compare-isins/:issuerId" element={<CompareIsins />} />
         </Route>
 
         {/* Creator routes */}

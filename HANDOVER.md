@@ -64,7 +64,8 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 | `/how-it-works/architecture` | **Architecture · flywheel · lineage · point-in-time** (public explainer) |
 | `/app/dashboard` | Investor monitoring dashboard (default) |
 | `/app/portfolio-score` | Portfolio Fundamental Score |
-| `/app/compare` | **Peer comparison** — 2–4 issuers side by side (`?issuer=<id>` deep-link) |
+| `/app/compare` | **Comparison** — Mode A (2–4 issuers, `?issuer=<id>` deep-link) + Mode B (cross-issuer, ISIN-level) |
+| `/app/compare-isins/:issuerId` | **ISIN-vs-ISIN** (same issuer) — shared Fundamental anchored once, everything else diverges |
 | `/app/sectors` · `/app/sector/:id` | **Sector index + sector detail** (leaderboard, aggregates, outlook) |
 | `/app/watchlist`, `/app/reports`, `/app/alerts`, `/app/profile` | Lighter investor pages |
 | `/app/assess` | Underwriting flow (investor mirror of `/underwriting`) |
@@ -79,10 +80,9 @@ On a normal machine with Node ≥ 18 on PATH, just `npm install && npm run dev`.
 Auth is in-memory (`src/contexts/AuthContext.tsx`): choosing a role on the landing logs you in;
 a **full browser reload logs you out** (state is not persisted). Role-guarded routes redirect.
 
-> **Unrouted link (until the ISIN-comparison slice lands):** `ActiveIsinsPanel`'s "Compare ISINs"
-> button points at `/app/compare-isins/:issuerId`, which does not exist yet. There is no `*` child
-> inside `/app`, so it falls through to the root catch-all → `Navigate to="/"` → **and because auth
-> is in-memory, that logs the user out.** Build the route in the comparison slice, or stub it first.
+> **~~Unrouted link~~ (resolved in the comparison slice):** `/app/compare-isins/:issuerId` now
+> exists, so `ActiveIsinsPanel`'s "Compare ISINs" button routes correctly and no longer logs the
+> user out.
 
 ---
 
@@ -235,6 +235,7 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
 - **`CovenantStatusChip`** — Breach `#E11D48` · Tight ≤10% `#FB7185` · Moderate ≤25% `#FBBF24` ·
   Comfortable >25% `#2DD4BF`. **Computed**, not authored.
 - **`BufferBar`** — remaining headroom as a bar (capped at 100%; hatched when breached).
+- **`IsinCompareGrid`** / **`compareGrid.ts`** — see the Phase 3 note below.
 - **`CovenantHeadroomChart`** — Recharts actual-vs-threshold. The threshold is drawn as a
   **`stepAfter` line** (not a flat `ReferenceLine`) when the covenant has a schedule, so a
   step-down covenant isn't misdrawn as always having been at today's level; a flat `ReferenceLine`
@@ -244,6 +245,31 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
 > threshold is) and *headroom* (computed — how far the actual is from breach) are different and
 > usually **inverse**. Keertana `…07220` Gearing is Strong quality with only 14.2% buffer;
 > its NNPA/net-worth covenant is Weak quality with 70.8% buffer. Don't "fix" that as a bug.
+
+### Comparison surfaces (Phase 3)
+- **`compareGrid.ts`** — shared `recStyle` / `rankExtremes` / `cellRing`, extracted from `Compare.tsx`
+  so all three surfaces highlight best/worst identically. `rankExtremes` returns `{best:-1,worst:-1}`
+  for an **all-equal row** — shared values (a same-issuer pair's Fundamental/Economic) must NOT be
+  tinted, or the UI asserts a difference that doesn't exist. It also ignores nulls/undefined.
+- **`IsinCompareGrid`** — the ISIN comparison grid, used by BOTH `/app/compare-isins/:issuerId`
+  (`sharedFundamental`) and `/app/compare` Mode B (`sharedFundamental={false}`). `sharedFundamental`
+  shows the Fundamental gauge once as an anchor; otherwise it's a per-column row. Rows: Total/Rating/
+  Issuance/Pricing(/Economic), pricing terms + 5 factor grades, instrument & ranking (secured/senior),
+  collateral, and covenants (count · monitorable · tightest w/ `CovenantStatusChip` · quality mix).
+- **`isinCovenantSummary(isin)`** (in `covenantMonitor.ts`) — per-ISIN roll-up (count, measured,
+  tightest condition, quality-grade mix) feeding the compare grid.
+- **`Compare.tsx` is EXTENDED, not rebuilt** — a `By issuer` / `By ISIN` pill toggles Mode A (the
+  original issuer comparison, unchanged) and Mode B (cross-issuer ISIN). Mode B seeds one ISIN from
+  each of two different issuers, appends the §K5 peer universe as a market-reference table (no
+  Fundamental Score), and Mode A ends with a bridge button into Mode B.
+
+> **Verification caution (three false negatives hit this session):** assertions against the rendered
+> DOM keep lying. (1) `t-eyebrow`/`t-metric` etc. `text-transform:uppercase`, so `innerText` is
+> UPPERCASED — match case-insensitively. (2) Chrome **reorders `box-shadow`** in the serialized
+> `style` attribute (`inset` moves to the end), so `[style*="inset 0 0 0 1px"]` never matches — read
+> `el.style.boxShadow` instead. (3) The `computer` screenshot tool times out on the `ScoreGauge`
+> count-up animation — use text tools, not screenshots, to verify these pages. Prefer executing the
+> pure helpers (esbuild-bundle a temp harness) over probing the DOM.
 - **`ScoreGauge`** — circular /N gauge, teal→cyan gradient, count-up; right-sized centred number +
   smaller suffix/band line.
 - **`ScoreTrend`** — area trend with segmented 3M/6M/12M/All pill; optional **dual-axis share-price**
@@ -381,9 +407,14 @@ issuer paused at Gaps with a gap-resolution panel) · Coverage (+ add-coverage f
       anywhere it appears in comparison.
 - [ ] **Peer universe** (`peers.ts`) issuers are market-reference only — no Fundamental Score.
 - [ ] Optional: real multi-ISIN coverage for **KrazyBee / Spandana** (today: implicit ISIN).
-- [ ] **`/app/compare-isins/:issuerId` does not exist** — `ActiveIsinsPanel`'s "Compare ISINs"
-      button is a dead link that currently logs the user out (see §4). Build it in the
-      comparison slice.
+- [x] ~~`/app/compare-isins/:issuerId` does not exist~~ — built in the comparison slice; the
+      "Compare ISINs" dead link is resolved.
+- [ ] Only **Keertana (2)** and **Avanti (4)** have multiple ISINs, so ISIN-vs-ISIN is meaningful
+      for those two; Midland/KrazyBee/Spandana show the single-instrument empty state. Avanti's 3
+      secondary ISINs are lightly seeded, so the Keertana pair is the only fully-assessed showcase.
+- [ ] **Mode B market reference has no AUM for covered ISINs** — the peer table shows AUM for §K5
+      comparators but "—" for the in-coverage rows (issuer AUM isn't on `IsinAssessment`). Wire it
+      from the report if that column should be complete.
 - [ ] `/app/search?q=` (the optional standalone results page) was not built — search is
       autocomplete-only from the two layouts + the dashboard hero.
 - [x] ~~The ISIN page's covenant table is an inline first cut~~ — now `<CovenantMonitor>`.

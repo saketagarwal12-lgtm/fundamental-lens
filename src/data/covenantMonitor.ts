@@ -142,6 +142,53 @@ export const rowTrend = (row: CovenantRow): number[] =>
     ? covenantHeadroomSeries(row.worstCondition).map(p => p.bufferPct).filter((v): v is number => v !== null)
     : [];
 
+export interface IsinCovenantSummary {
+  count: number;
+  measured: number;
+  /** The covenant closest to breach on this ISIN. */
+  tightest?: { name: string; metric: string; bufferPct: number; status: CovenantStatus };
+  /** How many covenants carry each authored quality grade. */
+  qualityCounts: { grade: Covenant['qualityGrade']; count: number }[];
+}
+
+/** Per-ISIN covenant roll-up for the comparison grids. */
+export const isinCovenantSummary = (isin: string): IsinCovenantSummary => {
+  const a = allIsins().find(x => x.isin.toUpperCase() === isin.toUpperCase());
+  const covs = a?.issuance?.covenants ?? [];
+
+  const measured = covs
+    .map(cov => {
+      const best = cov.conditions
+        .map(c => ({ c, r: covenantBuffer(c, latestActual(c)?.value ?? null) }))
+        .filter(x => x.r.bufferPct !== null);
+      if (!best.length) return null;
+      const worst = best.reduce((w, x) => (x.r.bufferPct! < w.r.bufferPct! ? x : w));
+      return { cov, metric: worst.c.metric, bufferPct: worst.r.bufferPct!, breached: worst.r.breached };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x);
+
+  const tightestRow = measured.length
+    ? measured.reduce((w, x) => (x.bufferPct < w.bufferPct ? x : w))
+    : undefined;
+
+  const grades = new Map<Covenant['qualityGrade'], number>();
+  for (const c of covs) grades.set(c.qualityGrade, (grades.get(c.qualityGrade) ?? 0) + 1);
+
+  return {
+    count: covs.length,
+    measured: measured.length,
+    tightest: tightestRow
+      ? {
+          name: tightestRow.cov.name,
+          metric: tightestRow.metric,
+          bufferPct: tightestRow.bufferPct,
+          status: covenantStatus(tightestRow.bufferPct, tightestRow.breached),
+        }
+      : undefined,
+    qualityCounts: [...grades.entries()].map(([grade, count]) => ({ grade, count })),
+  };
+};
+
 /**
  * Covenant alerts, expressed as Signals so the existing SignalsFeed can carry them
  * alongside the authored feed on the company page.

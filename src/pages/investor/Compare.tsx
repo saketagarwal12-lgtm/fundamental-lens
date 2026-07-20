@@ -1,36 +1,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Scale, Check, ArrowUpRight, ArrowDownRight, X } from 'lucide-react';
+import { Scale, Check, ArrowUpRight, ArrowDownRight, X, Building2, Receipt } from 'lucide-react';
 import { ScoreGauge } from '../../components/ScoreGauge';
 import { ScoreComposition } from '../../components/ScoreComposition';
 import { YieldGauge } from '../../components/YieldGauge';
 import { GradeBadge, gradeBarColor } from '../../components/GradeBadge';
+import { IsinCompareGrid } from '../../components/IsinCompareGrid';
+import { IllustrativeBadge } from '../../components/IllustrativeBadge';
+import { recStyle, rankExtremes, cellRing } from '../../components/compareGrid';
 import { getReport } from '../../data/reports';
-import { coveredIssuers, issuerMetrics, RATIOS, SECTORS } from '../../data/sectors';
+import { coveredIssuers, issuerMetrics, RATIOS, SECTORS, sectorMeta } from '../../data/sectors';
 import type { SectorId, IssuerMetrics } from '../../data/sectors';
+import { allIsins } from '../../data/isins';
+import { companies } from '../../data/companies';
+import { peerUniverse } from '../../data/peers';
 
-const recStyle = (rec: string): React.CSSProperties =>
-  rec === 'Subscribe' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
-  rec === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
-  { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
-
-// Best/worst index within a numeric row (nulls ignored) given a direction.
-const rankExtremes = (vals: (number | null)[], better: 'high' | 'low') => {
-  const idx = vals.map((v, i) => ({ v, i })).filter((x): x is { v: number; i: number } => x.v !== null);
-  if (idx.length < 2) return { best: -1, worst: -1 };
-  const sorted = [...idx].sort((a, b) => better === 'high' ? b.v - a.v : a.v - b.v);
-  return { best: sorted[0].i, worst: sorted[sorted.length - 1].i };
-};
-
-const cellRing = (i: number, best: number, worst: number): React.CSSProperties =>
-  i === best ? { background: 'rgba(52,211,153,0.10)', boxShadow: 'inset 0 0 0 1px rgba(52,211,153,0.4)' } :
-  i === worst ? { background: 'rgba(251,113,133,0.08)', boxShadow: 'inset 0 0 0 1px rgba(251,113,133,0.35)' } : {};
+type Mode = 'issuers' | 'isins';
 
 export const Compare: React.FC = () => {
   const all = useMemo(() => coveredIssuers(), []);
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
+  const [mode, setMode] = useState<Mode>('issuers');
   const [sector, setSector] = useState<SectorId | 'all'>('all');
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -53,6 +45,35 @@ export const Compare: React.FC = () => {
   }, [params, all]);
 
   const available = sector === 'all' ? all : all.filter(m => m.sector === sector);
+
+  // ── Mode B — cross-issuer, ISIN level ──────────────────────────────────────
+  const assessedIsins = useMemo(() => allIsins().filter(i => i.assessed !== false), []);
+  const [selectedIsins, setSelectedIsins] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Default to one ISIN from each of two different issuers — the point of Mode B
+    // is cross-issuer, so seeding two of the same issuer's would miss it.
+    const byIssuer = new Map<string, string>();
+    for (const i of assessedIsins) if (!byIssuer.has(i.issuerId)) byIssuer.set(i.issuerId, i.isin);
+    setSelectedIsins([...byIssuer.values()].slice(0, 2));
+  }, [assessedIsins]);
+
+  const chosenIsins = selectedIsins
+    .map(isin => assessedIsins.find(i => i.isin === isin))
+    .filter((x): x is NonNullable<typeof x> => !!x);
+
+  const toggleIsin = (isin: string) =>
+    setSelectedIsins(sel => {
+      if (sel.includes(isin)) return sel.length <= 1 ? sel : sel.filter(x => x !== isin);
+      if (sel.length >= 4) return sel;
+      return [...sel, isin];
+    });
+
+  // §K5 market-reference comparators, limited to the sectors on screen.
+  const sectorsOnScreen = new Set(chosenIsins.map(i => i.sector));
+  const referencePeers = peerUniverse
+    .filter(p => sectorsOnScreen.has(p.sector))
+    .sort((a, b) => a.ytm - b.ytm);
 
   const toggle = (id: string) => {
     setSelected(sel => {
@@ -77,13 +98,130 @@ export const Compare: React.FC = () => {
   return (
     <div className="p-6 page-fade">
       <div className="mb-5">
-        <div className="flex items-center gap-2">
-          <Scale size={18} style={{ color: '#2DD4BF' }} />
-          <h1 className="t-h1 text-primary-text">Compare issuers</h1>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2">
+              <Scale size={18} style={{ color: '#2DD4BF' }} />
+              <h1 className="t-h1 text-primary-text">Compare</h1>
+            </div>
+            <p className="t-lead mt-1 max-w-3xl">
+              {mode === 'issuers'
+                ? 'Put 2–4 covered issuers side by side — scores, composition, factors, ratios and yield. Filter by sector to keep it like-for-like.'
+                : 'Compare instruments across issuers. It starts with the issuer — you cannot read a bond without knowing whose credit stands behind it — then continues into what differs at the instrument level.'}
+            </p>
+          </div>
+
+          <div className="pill-track flex shrink-0" role="tablist" aria-label="Comparison mode">
+            {([
+              ['issuers', 'By issuer', Building2],
+              ['isins', 'By ISIN', Receipt],
+            ] as const).map(([m, label, Icon]) => (
+              <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
+                className={`px-3 py-1.5 text-xs transition-colors inline-flex items-center gap-1.5 ${mode === m ? 'pill-active' : 'pill-inactive'}`}>
+                <Icon size={12} /> {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <p className="t-lead mt-1">Put 2–4 covered issuers side by side — scores, composition, factors, ratios and yield. Filter by sector to keep it like-for-like.</p>
       </div>
 
+      {mode === 'isins' ? (
+        <>
+          {/* ISIN selector — grouped by issuer */}
+          <div className="glass-card p-5 mb-5">
+            <span className="t-eyebrow">Instruments ({chosenIsins.length}/4)</span>
+            <div className="mt-3 space-y-3">
+              {companies
+                .filter(c => assessedIsins.some(i => i.issuerId === c.id))
+                .map(c => (
+                  <div key={c.id} className="flex items-center gap-2 flex-wrap">
+                    <span className="t-caption w-32 shrink-0 truncate" title={c.name}>{c.name.split(' ')[0]}</span>
+                    {assessedIsins.filter(i => i.issuerId === c.id).map(i => {
+                      const on = selectedIsins.includes(i.isin);
+                      const disabled = !on && selectedIsins.length >= 4;
+                      return (
+                        <button key={i.isin} onClick={() => toggleIsin(i.isin)} disabled={disabled}
+                          aria-pressed={on}
+                          className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors inline-flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
+                          style={on
+                            ? { background: 'rgba(45,212,191,0.15)', color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.35)' }
+                            : { background: 'rgba(255,255,255,0.05)', color: '#9CB3B1', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          {on && <Check size={12} />}
+                          <span className="font-mono-nums">{i.isin}</span>
+                          {i.illustrative && <IllustrativeBadge compact />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+            </div>
+            <p className="t-caption mt-3">
+              Comparing two ISINs of the same issuer? <button onClick={() => navigate(`/app/compare-isins/${chosenIsins[0]?.issuerId ?? 'keertana'}`)} className="text-brand-teal hover:underline">Use ISIN-vs-ISIN</button> — it anchors the shared Fundamental Score once.
+            </p>
+          </div>
+
+          {chosenIsins.length < 2 ? (
+            <div className="glass-card p-10 text-center"><p className="t-lead">Pick at least two instruments to compare.</p></div>
+          ) : (
+            <div className="space-y-4">
+              <IsinCompareGrid isins={chosenIsins} sharedFundamental={false} onRemove={chosenIsins.length > 2 ? toggleIsin : undefined} />
+
+              {/* §K5 market reference */}
+              {referencePeers.length > 0 && (
+                <div className="glass-card p-5">
+                  <h3 className="t-h3 text-primary-text mb-1">Market reference</h3>
+                  <p className="t-caption mb-4">
+                    Comparable instruments in {[...sectorsOnScreen].map(s => sectorMeta(s).name).join(' and ')}, by yield.
+                    These are market comparators only — they carry no Fundamental Score, because they are not in coverage.
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-left" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium">Issuer</th>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium">ISIN</th>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium">Sector</th>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium">Rating</th>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium text-right">AUM</th>
+                          <th className="pb-2 pr-3 t-eyebrow font-medium text-right">YTM</th>
+                          <th className="pb-2 t-eyebrow font-medium">Tenor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chosenIsins.map(i => (
+                          <tr key={i.isin} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(45,212,191,0.06)' }}>
+                            <td className="py-2 pr-3 font-medium" style={{ color: '#2DD4BF' }}>
+                              {companies.find(c => c.id === i.issuerId)?.name.split(' ')[0]} <span className="t-caption">· in coverage</span>
+                            </td>
+                            <td className="py-2 pr-3 font-mono-nums text-primary-text">{i.isin}</td>
+                            <td className="py-2 pr-3 text-muted-text">{sectorMeta(i.sector).name}</td>
+                            <td className="py-2 pr-3 text-muted-text">{i.externalRating ?? '—'}</td>
+                            <td className="py-2 pr-3 text-right text-muted-text">—</td>
+                            <td className="py-2 pr-3 text-right font-mono-nums font-semibold" style={{ color: '#2DD4BF' }}>{i.ytmCurrent?.toFixed(2)}%</td>
+                            <td className="py-2 text-muted-text">{i.residualTenor ?? '—'}</td>
+                          </tr>
+                        ))}
+                        {referencePeers.map(p => (
+                          <tr key={p.isin} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td className="py-2 pr-3 text-primary-text">{p.issuer}</td>
+                            <td className="py-2 pr-3 font-mono-nums text-muted-text">{p.isin}</td>
+                            <td className="py-2 pr-3 text-muted-text">{sectorMeta(p.sector).name}</td>
+                            <td className="py-2 pr-3 text-muted-text">{p.externalRating}</td>
+                            <td className="py-2 pr-3 text-right font-mono-nums text-muted-text">{p.aum}</td>
+                            <td className="py-2 pr-3 text-right font-mono-nums text-primary-text">{p.ytm.toFixed(2)}%</td>
+                            <td className="py-2 text-muted-text">{p.tenor ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+      <>
       {/* Controls */}
       <div className="glass-card p-5 mb-5">
         <div className="flex items-center gap-2 flex-wrap mb-4">
@@ -254,8 +392,22 @@ export const Compare: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Bridge into the instrument level */}
+            <div className="glass-card p-5 flex items-center justify-between gap-4 flex-wrap"
+              style={{ background: 'rgba(45,212,191,0.05)', border: '1px solid rgba(45,212,191,0.2)' }}>
+              <p className="t-body text-muted-text max-w-2xl">
+                This is the issuer. The instrument is a separate question — two bonds from the same issuer share
+                every score above and can still differ on Total Score and Rating.
+              </p>
+              <button onClick={() => setMode('isins')} className="btn-gradient px-4 py-2 rounded-lg text-xs inline-flex items-center gap-1.5 shrink-0">
+                <Receipt size={13} /> Compare by ISIN
+              </button>
+            </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
