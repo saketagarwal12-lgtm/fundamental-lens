@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { rememberRoute } from './components/useRestoreScroll';
 import { Landing } from './pages/Landing';
 import { InvestorLayout } from './layouts/InvestorLayout';
 import { CreatorLayout } from './layouts/CreatorLayout';
@@ -30,7 +31,14 @@ const ProtectedRoute: React.FC<{
   children: React.ReactNode;
 }> = ({ role, children }) => {
   const { role: currentRole } = useAuth();
-  if (!currentRole) return <Navigate to="/" replace />;
+  const location = useLocation();
+
+  if (!currentRole) {
+    // Auth is in-memory, so a reload lands here. Remember where the user was so
+    // re-login returns them to it rather than the dashboard (§2d).
+    rememberRoute(location.pathname + location.search);
+    return <Navigate to="/" replace />;
+  }
   if (currentRole !== role) {
     return <Navigate to={currentRole === 'investor' ? '/app/dashboard' : '/creator/pipeline'} replace />;
   }

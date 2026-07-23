@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Scale, Check, ArrowLeft, Building2 } from 'lucide-react';
+import { PageNav } from '../../components/PageNav';
 import { IsinCompareGrid } from '../../components/IsinCompareGrid';
 import { IllustrativeBadge } from '../../components/IllustrativeBadge';
 import { getIsinsForIssuer } from '../../data/isins';
@@ -66,9 +67,14 @@ export const CompareIsins: React.FC = () => {
 
   return (
     <div className="p-6 page-fade">
-      <button onClick={() => navigate(`/app/company/${issuerId}`)} className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors mb-4">
-        <ArrowLeft size={13} /> Back to {issuer.name}
-      </button>
+      <PageNav
+        up={{ label: issuer.name, to: `/app/company/${issuerId}` }}
+        crumbs={[
+          { label: 'Coverage', to: '/app/reports' },
+          { label: issuer.name, to: `/app/company/${issuerId}` },
+          { label: 'Compare ISINs' },
+        ]}
+      />
 
       <div className="mb-5">
         <div className="flex items-center gap-2 flex-wrap">

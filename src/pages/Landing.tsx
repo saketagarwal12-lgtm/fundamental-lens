@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, BarChart2, Bell, Search, ArrowRight, X, ChevronRight, Bot, Gauge, FileText, Database, Sparkles, Check } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
+import { takeRememberedRoute } from '../components/useRestoreScroll';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { Sparkline } from '../components/Sparkline';
 import { BRAND } from '../brand';
@@ -126,7 +127,11 @@ export const Landing: React.FC = () => {
   const handleEnter = (role: 'investor' | 'creator') => {
     login(role, name.trim() || undefined);
     setShowModal(false);
-    navigate(role === 'investor' ? '/app/dashboard' : '/creator/pipeline');
+    // If a reload logged the user out mid-session, return them to where they were (§2d).
+    const home = role === 'investor' ? '/app/dashboard' : '/creator/pipeline';
+    const back = takeRememberedRoute();
+    const prefix = role === 'investor' ? '/app/' : '/creator/';
+    navigate(back && back.startsWith(prefix) ? back : home);
   };
 
   return (
@@ -498,7 +503,12 @@ export const Landing: React.FC = () => {
       {/* Footer */}
       <footer className="py-8" style={{ background: 'rgba(10,25,27,0.7)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Wordmark size="sm" />
+          {/* Plain text, not <Wordmark> — the mark renders exactly once per view (§2g),
+              and that one instance is the sticky nav above. */}
+          <span className="text-sm font-bold tracking-[-0.02em] select-none">
+            <span className="text-primary-text">Fundamental</span>
+            <span className="text-brand-teal"> Lens</span>
+          </span>
           <p className="text-xs text-muted-text text-center">
             Research content is for informational purposes only. Not personalised investment advice.
             Please read all offer documents before investing.
@@ -518,10 +528,9 @@ export const Landing: React.FC = () => {
             >
               <X size={20} />
             </button>
-            <div className="flex justify-center mb-6">
-              <Wordmark size="lg" />
-            </div>
-            <h2 className="text-xl font-semibold text-center text-primary-text mb-1">Welcome</h2>
+            {/* No <Wordmark> here — the sticky nav's mark is still on screen behind
+                this modal, and the brand renders exactly once per view (§2g). */}
+            <h2 className="text-xl font-semibold text-center text-primary-text mb-1 mt-2">Welcome to Fundamental Lens</h2>
             <p className="text-sm text-muted-text text-center mb-6">Choose how you'd like to enter</p>
 
             <div className="mb-5">

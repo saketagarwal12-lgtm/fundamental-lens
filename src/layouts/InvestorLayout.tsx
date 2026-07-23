@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { useRestoreScroll } from '../components/useRestoreScroll';
 import { LayoutDashboard, Star, FileText, Bell, User, TrendingUp, Sparkles, Scale, Layers, Workflow, Gavel } from 'lucide-react';
 import { Wordmark } from '../components/Wordmark';
 import { IconRail } from '../components/IconRail';
@@ -24,6 +26,8 @@ const navItems: RailItem[] = [
 export const InvestorLayout: React.FC = () => {
   const { userName, logout } = useAuth();
   const navigate = useNavigate();
+  const mainRef = useRef<HTMLElement>(null);
+  useRestoreScroll(mainRef);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'transparent' }}>
@@ -62,8 +66,8 @@ export const InvestorLayout: React.FC = () => {
           </div>
         </header>
 
-        {/* Page content (centred) */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Page content (centred). Scroll position is restored per route (§2c). */}
+        <main ref={mainRef} className="flex-1 overflow-y-auto">
           <div className="max-w-[1400px] mx-auto w-full">
             <Outlet />
           </div>

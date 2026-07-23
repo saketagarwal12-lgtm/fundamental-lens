@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldAlert, Gavel } from 'lucide-react';
+import { PageNav } from '../../components/PageNav';
 import { GradeBadge } from '../../components/GradeBadge';
 import { Sparkline } from '../../components/Sparkline';
 import { CovenantStatusChip } from '../../components/CovenantStatusChip';
@@ -33,6 +34,11 @@ export const Covenants: React.FC = () => {
 
   return (
     <div className="p-6 page-fade max-w-7xl mx-auto">
+      <PageNav
+        up={{ label: 'Dashboard', to: '/app/dashboard' }}
+        crumbs={[{ label: 'Dashboard', to: '/app/dashboard' }, { label: 'Covenant monitor' }]}
+      />
+
       <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
           <h1 className="t-h1 text-primary-text flex items-center gap-2"><Gavel size={20} className="text-brand-teal" /> Covenant monitor</h1>

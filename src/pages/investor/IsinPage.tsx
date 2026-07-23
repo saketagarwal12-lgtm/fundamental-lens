@@ -1,7 +1,8 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, ShieldCheck, Scale, AlertTriangle, Globe, Layers, Coins,
+  Building2, ShieldCheck, Scale, AlertTriangle, Globe, Layers, Coins,
 } from 'lucide-react';
+import { PageNav } from '../../components/PageNav';
 import { ScoreGauge } from '../../components/ScoreGauge';
 import { ScoreComposition } from '../../components/ScoreComposition';
 import { FactorHeatmap } from '../../components/FactorHeatmap';
@@ -134,12 +135,19 @@ export const IsinPage: React.FC = () => {
 
   return (
     <div className="p-6 space-y-8 page-fade">
+      {/* Up-control + breadcrumb (§2). The parent is the issuer; a referrer in
+          router state (e.g. arriving from a sector page) takes precedence. */}
+      <PageNav
+        up={{ label: issuer?.name ?? 'Issuer', to: `/app/company/${a.issuerId}` }}
+        crumbs={[
+          { label: 'Coverage', to: '/app/reports' },
+          { label: issuer?.name ?? a.issuerId, to: `/app/company/${a.issuerId}` },
+          { label: a.isin },
+        ]}
+      />
+
       {/* ── Header ── */}
       <header className="glass-card-elevated p-6">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors mb-4">
-          <ArrowLeft size={13} /> Back
-        </button>
-
         <div className="flex items-start justify-between gap-6 flex-wrap">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">

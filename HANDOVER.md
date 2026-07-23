@@ -344,6 +344,46 @@ diverging Issuance (76 vs 70), Pricing (150 vs 105) and Total (368·R5 vs 317·R
 
 ---
 
+## 7a. Hierarchical navigation (§2)
+
+Every non-top-level route carries **both** an up-control and a breadcrumb, via `<PageNav>`:
+
+```tsx
+<PageNav up={{ label: 'Sectors', to: '/app/sectors' }}
+         crumbs={[{ label: 'Sectors', to: '/app/sectors' }, { label: agg.name }]} />
+```
+
+- **Up ≠ browser-back.** Up goes to the hierarchical parent; back retraces history. They differ
+  whenever the user arrived sideways (e.g. from search).
+- **Referrer-aware.** Navigate with `state: fromState(label, to)` and the destination's up-control
+  and trail reflect the path actually taken. `SectorDetail`'s leaderboard does this, so
+  Sectors → NBFC-MFI → Spandana shows up "NBFC-MFI", not the default "Coverage". Falls back to the
+  declared parent on direct URL entry or reload, so it never dead-ends.
+- **Top-level routes take no up-control** (they're IconRail destinations): dashboard,
+  portfolio-score, watchlist, reports, alerts, profile, sectors, assess. `compare` and `covenants`
+  carry a breadcrumb for context.
+
+**URL-encoded view state (§2c):** `/app/compare` writes `?mode=&sector=&issuers=&isins=` with
+`replace: true`, so browser back/forward and shared links reproduce the exact view without
+spamming history. `useRestoreScroll` (in `components/useRestoreScroll.ts`) restores scroll per
+route from sessionStorage — the app's `<main>` scrolls, not `window`.
+
+**Post-login return (§2d):** auth is in-memory, so a reload logs out. `ProtectedRoute` calls
+`rememberRoute()` before redirecting; `Landing.handleEnter` calls `takeRememberedRoute()` and
+returns the user there (role-prefix checked) rather than to the dashboard.
+
+### Brand mark (§2f/§2g)
+`<Wordmark>` is a router `Link` — investor → `/app/dashboard`, creator → `/creator/pipeline`,
+logged out → `/`. **When already on that route it renders as plain text**, so it can't push a
+duplicate history entry. Keyboard-focusable with a visible ring, `aria-label="Fundamental Lens — home"`.
+
+> **Exactly one `<Wordmark>` per view.** One in the top bar in each layout; the sticky nav on
+> marketing pages; `IconRail` carries no brand glyph. The landing footer and the sign-in modal use
+> **plain text**, not the component — the modal opens over the nav, which would otherwise put two
+> marks on screen at once. Grep `Wordmark` before adding one.
+
+---
+
 ## 8. Navigation pattern (two-tier)
 
 - **Tier 1** — permanent slim icon rail (`IconRail`), never collapses, hover flyout for labels.

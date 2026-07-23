@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Layers, GitCompare } from 'lucide-react';
+import { Layers, GitCompare } from 'lucide-react';
+import { PageNav, fromState } from '../../components/PageNav';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 import { GradeBadge, gradeColor } from '../../components/GradeBadge';
 import { MetricCard } from '../../components/MetricCard';
@@ -41,9 +42,10 @@ export const SectorDetail: React.FC = () => {
 
   return (
     <div className="p-6 page-fade">
-      <button onClick={() => navigate('/app/sectors')} className="inline-flex items-center gap-1.5 t-label text-muted-text hover:text-primary-text mb-4">
-        <ArrowLeft size={15} /> All sectors
-      </button>
+      <PageNav
+        up={{ label: 'Sectors', to: '/app/sectors' }}
+        crumbs={[{ label: 'Sectors', to: '/app/sectors' }, { label: agg.name }]}
+      />
 
       <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
         <div>
@@ -68,7 +70,8 @@ export const SectorDetail: React.FC = () => {
           <h3 className="t-h3 text-primary-text mb-4">Issuer leaderboard <span className="t-caption font-normal">· by Fundamental Score /200</span></h3>
           <div className="space-y-2.5">
             {agg.members.map((m, i) => (
-              <button key={m.id} onClick={() => navigate(`/app/company/${m.id}`)}
+              // Pass the referrer so the issuer page's up-control returns here (§2c).
+              <button key={m.id} onClick={() => navigate(`/app/company/${m.id}`, { state: fromState(agg.name, `/app/sector/${agg.id}`) })}
                 className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,212,191,0.06)')}

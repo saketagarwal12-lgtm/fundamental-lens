@@ -6,6 +6,7 @@ import { GradeBadge, gradeBarColor } from '../../components/GradeBadge';
 import { IsinCompareGrid } from '../../components/IsinCompareGrid';
 import { IllustrativeBadge } from '../../components/IllustrativeBadge';
 import { rankExtremes, cellRing } from '../../components/compareGrid';
+import { PageNav } from '../../components/PageNav';
 import { externalRatingLabel } from '../../data/display';
 import { coveredIssuers, issuerMetrics, RATIOS, SECTORS, sectorMeta } from '../../data/sectors';
 import type { SectorId, IssuerMetrics } from '../../data/sectors';
@@ -17,15 +18,22 @@ type Mode = 'issuers' | 'isins';
 
 export const Compare: React.FC = () => {
   const all = useMemo(() => coveredIssuers(), []);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState<Mode>('issuers');
-  const [sector, setSector] = useState<SectorId | 'all'>('all');
+  // Selection lives in the URL (§2c) so browser back/forward and shared links
+  // reproduce the exact view: ?mode=&sector=&issuers=a,b&isins=X,Y
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'isins' ? 'isins' : 'issuers');
+  const [sector, setSector] = useState<SectorId | 'all'>((params.get('sector') as SectorId | 'all') ?? 'all');
   const [selected, setSelected] = useState<string[]>([]);
 
-  // Preload from ?issuer=<id> (deep-link from a company page) — that issuer + its peers.
+  // Preload from ?issuers=… , or ?issuer=<id> (deep-link from a company page).
   useEffect(() => {
+    const listed = params.get('issuers')?.split(',').filter(Boolean);
+    if (listed?.length) {
+      setSelected(listed.filter(id => all.some(m => m.id === id)).slice(0, 4));
+      return;
+    }
     const seed = params.get('issuer');
     if (seed) {
       const m = issuerMetrics(seed);
@@ -40,7 +48,9 @@ export const Compare: React.FC = () => {
     // Default: first two covered issuers of the same sector if possible, else any two.
     const mfi = all.filter(x => x.sector === 'mfi').map(x => x.id);
     setSelected(mfi.length >= 2 ? mfi.slice(0, 2) : all.slice(0, 2).map(x => x.id));
-  }, [params, all]);
+    // Intentionally seeded once from the initial URL; later edits write back below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all]);
 
   const available = sector === 'all' ? all : all.filter(m => m.sector === sector);
 
@@ -49,12 +59,29 @@ export const Compare: React.FC = () => {
   const [selectedIsins, setSelectedIsins] = useState<string[]>([]);
 
   useEffect(() => {
+    const listed = params.get('isins')?.split(',').filter(Boolean);
+    if (listed?.length) {
+      setSelectedIsins(listed.filter(x => assessedIsins.some(i => i.isin === x)).slice(0, 4));
+      return;
+    }
     // Default to one ISIN from each of two different issuers — the point of Mode B
     // is cross-issuer, so seeding two of the same issuer's would miss it.
     const byIssuer = new Map<string, string>();
     for (const i of assessedIsins) if (!byIssuer.has(i.issuerId)) byIssuer.set(i.issuerId, i.isin);
     setSelectedIsins([...byIssuer.values()].slice(0, 2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessedIsins]);
+
+  // Write the current view back to the URL (replace, so we don't spam history).
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (mode !== 'issuers') next.set('mode', mode);
+    if (sector !== 'all') next.set('sector', sector);
+    if (selected.length) next.set('issuers', selected.join(','));
+    if (selectedIsins.length) next.set('isins', selectedIsins.join(','));
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, sector, selected, selectedIsins]);
 
   const chosenIsins = selectedIsins
     .map(isin => assessedIsins.find(i => i.isin === isin))
@@ -95,6 +122,11 @@ export const Compare: React.FC = () => {
 
   return (
     <div className="p-6 page-fade">
+      <PageNav
+        up={{ label: 'Dashboard', to: '/app/dashboard' }}
+        crumbs={[{ label: 'Dashboard', to: '/app/dashboard' }, { label: mode === 'isins' ? 'Compare instruments' : 'Compare issuers' }]}
+      />
+
       <div className="mb-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>

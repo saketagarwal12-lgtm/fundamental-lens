@@ -20,6 +20,7 @@ import { ScorecardTable } from '../../../components/ScorecardTable';
 import { RatingLens } from '../../../components/RatingLens';
 import type { RatingLensPillar } from '../../../components/RatingLens';
 import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
+import { PageNav } from '../../../components/PageNav';
 import { companies } from '../../../data/companies';
 import { getIsinsForIssuer } from '../../../data/isins';
 import { covenantSignalsForIssuer } from '../../../data/covenantMonitor';
@@ -332,10 +333,18 @@ export const CompanyPage: React.FC = () => {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 overflow-y-auto">
+        {/* Up-control + breadcrumb, above the header (§2a/§2b). */}
+        <div className="px-6 pt-4">
+          <PageNav
+            up={{ label: 'Coverage', to: '/app/reports' }}
+            crumbs={[{ label: 'Coverage', to: '/app/reports' }, { label: company.name }]}
+          />
+        </div>
+
         {/* Header — full on Overview, slim on every other section */}
         {section === 'overview' ? (
-          <div className="glass-card-elevated px-6 py-5 sticky top-0 z-10"
-            style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="glass-card-elevated px-6 py-5 sticky top-0"
+            style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)', zIndex: 'var(--z-page-header)' as unknown as number }}>
             <div className="flex items-start gap-5 flex-wrap">
               <div className="flex-1 min-w-0">
                 {/* Issuer-level header. No recommendation, Total Score or Rating —
