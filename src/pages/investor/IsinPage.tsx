@@ -18,6 +18,7 @@ import type { PeerRow } from '../../data/reports';
 import { peersInSector } from '../../data/peers';
 import { sectorMeta } from '../../data/sectors';
 import { gradeForPct } from '../../data/score';
+import { externalRatingLabel, dataGapText } from '../../data/display';
 import {
   getIsinAssessment, getIsinScore, getIsinComponents, getIsinScorecard,
   getIssuerFundamental, getIssuerEconomic,
@@ -156,7 +157,7 @@ export const IsinPage: React.FC = () => {
               {sectorMeta(a.sector).name}
               {a.ranking ? ` · ${a.ranking}` : ''}
               {a.listing ? ` · ${a.listing}` : ''}
-              {a.externalRating ? ` · ${a.externalRating}` : ''}
+              {a.externalRating ? ` · ${externalRatingLabel(a.externalRating)}` : ''}
             </p>
 
             <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -210,7 +211,7 @@ export const IsinPage: React.FC = () => {
         <div className="rounded-xl px-4 py-3 flex items-start gap-3" style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.25)' }}>
           <AlertTriangle size={15} className="shrink-0 mt-0.5" style={{ color: '#FBBF24' }} />
           <div className="space-y-1">
-            {a.todo.map(t => <p key={t} className="text-xs leading-relaxed" style={{ color: '#FBBF24' }}>{t}</p>)}
+            {a.todo.map(t => <p key={t} className="text-xs leading-relaxed" style={{ color: '#FBBF24' }}>{dataGapText(t)}</p>)}
           </div>
         </div>
       ) : null}
@@ -307,7 +308,7 @@ export const IsinPage: React.FC = () => {
                       <GradeBadge grade={a.issuance.collateral.grade} compact />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-text leading-relaxed mb-3">{a.issuance.collateral.note}</p>
+                  <p className="text-xs text-muted-text leading-relaxed mb-3">{dataGapText(a.issuance.collateral.note)}</p>
                   {a.issuance.collateral.selectionCriteria.length > 0 && (
                     <>
                       <p className="t-eyebrow mb-2">Pool selection criteria</p>
@@ -352,7 +353,7 @@ export const IsinPage: React.FC = () => {
                   <MetricCard label="Current YTM" value={a.pricing.ytm?.toFixed(2) ?? '—'} unit="%" highlight />
                   <MetricCard label="G-sec base" value={a.pricing.gsec?.toFixed(2) ?? '—'} unit="%" />
                   <MetricCard label="Credit risk premium" value={a.pricing.creditRiskPremium?.toFixed(2) ?? '—'} unit="%" />
-                  <MetricCard label="Recommendation" value={a.pricing.recommendation ?? 'TODO'} />
+                  <MetricCard label="Recommendation" value={a.pricing.recommendation ?? 'Pending'} />
                 </div>
 
                 {a.pricing.gsec != null && a.pricing.creditRiskPremium != null && (a.pricing.recentRange || a.pricing.peerRange) && (
@@ -404,7 +405,7 @@ export const IsinPage: React.FC = () => {
                 )}
 
                 {peers.length > 0 && a.pricing.ytm != null && (
-                  <PeerYieldRange peers={peers} thisIssuer={issuer?.name ?? a.issuerId} thisYtm={a.pricing.ytm} thisRating={a.externalRating ?? '—'} />
+                  <PeerYieldRange peers={peers} thisIssuer={issuer?.name ?? a.issuerId} thisYtm={a.pricing.ytm} thisRating={externalRatingLabel(a.externalRating, '—')} />
                 )}
               </>
             )}

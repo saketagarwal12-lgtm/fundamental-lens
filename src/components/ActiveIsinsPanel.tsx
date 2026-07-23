@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Scale, ShieldCheck } from 'lucide-react';
 import { getIsinsForIssuer, getIsinScore } from '../data/isins';
+import { externalRatingLabel } from '../data/display';
 import { IllustrativeBadge } from './IllustrativeBadge';
 
 // The issuer's ISINs, compact. Lets the user iterate between instruments of the
@@ -92,7 +93,7 @@ export const ActiveIsinsPanel: React.FC<Props> = ({ issuerId, currentIsin }) => 
                 <Cell label="Current YTM" value={i.ytmCurrent != null ? <span style={{ color: '#2DD4BF' }}>{i.ytmCurrent.toFixed(2)}%</span> : '—'} />
                 <Cell label="Residual tenor" value={i.residualTenor ?? '—'} />
                 <Cell label="Issue size" value={i.issueSize != null ? `₹${i.issueSize} cr` : '—'} />
-                <Cell label="Rating" value={i.externalRating ?? '—'} />
+                <Cell label="Rating" value={externalRatingLabel(i.externalRating, '—')} />
                 <Cell
                   label="Total (this ISIN)"
                   value={s

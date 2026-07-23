@@ -10,6 +10,7 @@ import { getIsinScore, getIssuerFundamental } from '../data/isins';
 import { isinCovenantSummary } from '../data/covenantMonitor';
 import { companies } from '../data/companies';
 import { gradeForPct } from '../data/score';
+import { externalRatingLabel } from '../data/display';
 
 // Side-by-side ISIN comparison.
 //
@@ -97,7 +98,7 @@ export const IsinCompareGrid: React.FC<Props> = ({ isins, sharedFundamental, onR
                 {a.assessed === false && (
                   <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(156,179,177,0.15)', color: '#9CB3B1' }}>Not assessed</span>
                 )}
-                {a.externalRating && <span className="t-caption">{a.externalRating}</span>}
+                {a.externalRating && <span className="t-caption">{externalRatingLabel(a.externalRating)}</span>}
               </div>
             </div>
           ))}

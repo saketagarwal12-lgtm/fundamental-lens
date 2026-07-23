@@ -5,15 +5,12 @@ import {
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
   Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
-  Newspaper, FileText, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3, Receipt,
+  Newspaper, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3, Receipt,
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { ScoreRing } from '../../../components/ScoreRing';
 import { GradeBadge, gradeBarColor } from '../../../components/GradeBadge';
 import { MetricCard } from '../../../components/MetricCard';
-import { YieldGauge } from '../../../components/YieldGauge';
-import { PeerYieldRange } from '../../../components/PeerYieldRange';
-import { CovenantTable } from '../../../components/CovenantTable';
 import { FundamentalScore } from '../../../components/FundamentalScore';
 import { DataSourcesPanel } from '../../../components/DataSourcesPanel';
 import { SignalsFeed } from '../../../components/SignalsFeed';
@@ -26,14 +23,18 @@ import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
 import { companies } from '../../../data/companies';
 import { getIsinsForIssuer } from '../../../data/isins';
 import { covenantSignalsForIssuer } from '../../../data/covenantMonitor';
+import { coveredIssuers } from '../../../data/sectors';
+import { externalRatingLabel, isPlaceholder, issuerLevelClaims, textOrDash } from '../../../data/display';
 import { getReport } from '../../../data/reports';
 import { getScaledScore, getIssuerTrend } from '../../../data/score';
 import type { CompanyReport } from '../../../data/reports';
 import type { FinancialSection } from '../../../data/krazybee';
 
+// Issuer-level sections only. 'ncd' was removed (§1b) — NCD issuances, issuance
+// structure and covenants are instrument-level and live on /app/isin/:isin.
 type Section =
   | 'overview' | 'isins' | 'scorecard' | 'signals' | 'weightage' | 'business' | 'financial' | 'peers' | 'external'
-  | 'developments' | 'ncd' | 'sector' | 'summary' | 'ai';
+  | 'developments' | 'sector' | 'summary' | 'ai';
 
 const VIZ_COLORS = ['#2DD4BF', '#38BDF8', '#34D399', '#FBBF24', '#FB923C', '#A78BFA', '#E9F3F1', '#0EA5A0', '#60A5FA', '#F472B6', '#FACC15', '#94A3B8', '#22D3EE'];
 
@@ -183,6 +184,14 @@ export const CompanyPage: React.FC = () => {
   const report: CompanyReport | undefined = getReport(id);
   const issuerIsins = id ? getIsinsForIssuer(id) : [];
 
+  // Issuer-level peer set: covered issuers in the same sub-sector, ranked by
+  // Fundamental Score. Yield/spread comparison is instrument-level (§1).
+  const peerFundamentals = report
+    ? coveredIssuers()
+        .filter(m => m.sector === report.subSectorKey)
+        .sort((a, b) => b.fundamental.score - a.fundamental.score)
+    : [];
+
   if (!company) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -192,10 +201,7 @@ export const CompanyPage: React.FC = () => {
     );
   }
 
-  const recStyle = (rec: string): React.CSSProperties =>
-    rec === 'Subscribe' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
-    rec === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
-    { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' };
+  // (recStyle removed with the issuer-level recommendation badge — §1b.)
 
   const handleAiQuery = (q: string) => {
     if (!report) return;
@@ -222,7 +228,6 @@ export const CompanyPage: React.FC = () => {
     { key: 'peers', label: 'Peer Comparison', icon: Scale },
     { key: 'external', label: 'External Ratings', icon: Award },
     { key: 'developments', label: 'Recent Developments', icon: Newspaper },
-    { key: 'ncd', label: 'NCD Issuances', icon: FileText },
     { key: 'sector', label: 'Sector Outlook', icon: Globe },
     { key: 'summary', label: 'Summary Table', icon: Table },
     { key: 'ai', label: 'Ask AI', icon: Bot },
@@ -333,17 +338,24 @@ export const CompanyPage: React.FC = () => {
             style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-start gap-5 flex-wrap">
               <div className="flex-1 min-w-0">
+                {/* Issuer-level header. No recommendation, Total Score or Rating —
+                    those are made on an instrument at a price, so they live on the ISIN page. */}
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <h1 className="text-lg font-semibold text-primary-text">{company.name}</h1>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold" style={recStyle(company.recommendation)}>{company.recommendation}</span>
                 </div>
-                <p className="text-xs text-muted-text">{company.sector} · {company.subSector} · {company.hq} · Est. {company.established}</p>
+                <p className="text-xs text-muted-text">
+                  {[company.sector, company.subSector, textOrDash(company.hq, ''), isPlaceholder(company.established) ? '' : `Est. ${company.established}`]
+                    .filter(Boolean).join(' · ')}
+                </p>
                 <div className="flex items-center gap-3 mt-2 flex-wrap text-xs text-muted-text">
                   <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {company.externalRating} · {company.ratingAgency}
+                    {externalRatingLabel(company.externalRating)} · {externalRatingLabel(company.ratingAgency)}
                   </span>
-                  <span>Internal: {company.internalRating}/15</span>
-                  <span>Combined: {company.combinedScore}</span>
+                  {issuerScore && (
+                    <span className="font-mono-nums" title="Fundamental Score — issuer level, shared across this issuer's instruments">
+                      Fundamental {issuerScore.score}/{issuerScore.max}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-4 shrink-0">
@@ -416,8 +428,8 @@ export const CompanyPage: React.FC = () => {
                   <MetricCard label="Total CAR" value={latest(report.financials.capitalization, 'Total CAR')} />
                   <MetricCard label="Leverage" value={latestAny(report.financials.capitalization, ['Leverage', 'Gearing'])} />
                   <MetricCard label="NIM" value={latestAny(report.financials.profitability, ['NIM', 'Net Interest Margin'])} />
-                  <MetricCard label="NCD YTM" value={report.yieldOverview.currentYtm.toFixed(2)} unit="%" highlight />
-                  <MetricCard label="External Rating" value={company.externalRating.split(' ')[0]} />
+                  <MetricCard label="RoAA" value={latestAny(report.financials.profitability, ['ROAA', 'Return on asset'])} />
+                  <MetricCard label="External Rating" value={externalRatingLabel(company.externalRating).split(' ')[0]} />
                 </div>
 
                 {/* Highlight cards */}
@@ -425,22 +437,27 @@ export const CompanyPage: React.FC = () => {
                   <div className="glass-card p-5" style={{ borderColor: 'rgba(45,212,191,0.2)' }}>
                     <div className="flex items-center gap-2 mb-3"><Lightbulb size={16} style={{ color: '#2DD4BF' }} /><h3 className="font-semibold text-primary-text text-sm">What's comforting?</h3></div>
                     <ul className="space-y-2">
-                      {report.recommendationRationale.map(r => (
+                      {issuerLevelClaims(report.recommendationRationale).map(r => (
                         <li key={r} className="flex gap-2 text-xs text-muted-text leading-relaxed">
                           <span style={{ color: '#2DD4BF' }} className="shrink-0">▸</span>{r}
                         </li>
                       ))}
                     </ul>
                   </div>
+                  {/* Issuer-level financial strength only. Structural protection
+                      (security cover, covenants, listing) is instrument-level — see the ISIN page. */}
                   <div className="glass-card p-5">
-                    <div className="flex items-center gap-2 mb-3"><ShieldCheck size={16} style={{ color: '#34D399' }} /><h3 className="font-semibold text-primary-text text-sm">How your investment is covered</h3></div>
+                    <div className="flex items-center gap-2 mb-3"><ShieldCheck size={16} style={{ color: '#34D399' }} /><h3 className="font-semibold text-primary-text text-sm">Issuer financial strength</h3></div>
                     <ul className="space-y-2">
-                      {report.investorProtection.map(r => (
+                      {issuerLevelClaims(report.investorProtection).map(r => (
                         <li key={r} className="flex gap-2 text-xs text-muted-text leading-relaxed">
                           <span style={{ color: '#34D399' }} className="shrink-0">✓</span>{r}
                         </li>
                       ))}
                     </ul>
+                    <p className="t-caption mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                      Instrument-level protection — security cover, covenants, ranking — is assessed per ISIN.
+                    </p>
                   </div>
                 </div>
 
@@ -449,13 +466,7 @@ export const CompanyPage: React.FC = () => {
                   <Donut title="Ownership Structure" data={report.ownership} limit={5} />
                   <Donut title="Product / AUM Mix" data={report.productMix} />
                 </div>
-                <p className="text-xs text-muted-text leading-relaxed mb-7">{report.ownershipNote}</p>
-
-                {/* Yield Overview — last */}
-                <div>
-                  <h3 className="t-h3 text-primary-text mb-3">Yield Overview</h3>
-                  <YieldGauge data={report.yieldOverview} />
-                </div>
+                <p className="text-xs text-muted-text leading-relaxed">{report.ownershipNote}</p>
               </div>
             )}
 
@@ -745,8 +756,31 @@ export const CompanyPage: React.FC = () => {
                     <Scale size={13} /> Compare side by side
                   </button>
                 </div>
-                <p className="text-sm text-muted-text mb-5">This issue's current NCD ({report.yieldOverview.currentYtm.toFixed(2)}% YTM) vs the {subSectorLabel} peer set. Open the full side-by-side comparison to line up scores, factors and ratios against covered peers.</p>
-                <PeerYieldRange peers={report.peers} thisIssuer={firstName} thisYtm={report.yieldOverview.currentYtm} thisRating={company.externalRating.split(' ')[0]} />
+                {/* Fundamentals only. Yield/spread is a property of an instrument,
+                    so peer YTM comparison lives on the ISIN page (§1). */}
+                <p className="text-sm text-muted-text mb-5">
+                  How {firstName} compares with the {subSectorLabel} peer set on issuer fundamentals. Open the full
+                  side-by-side comparison to line up scores, factors and ratios. Yield and spread are compared per
+                  instrument — see this issuer's Active ISINs.
+                </p>
+                <div className="glass-card p-5">
+                  <div className="space-y-2">
+                    {peerFundamentals.map((p, i) => (
+                      <div key={p.id} className="grid gap-3 items-center py-2"
+                        style={{ gridTemplateColumns: '1fr 90px 110px', borderBottom: i === peerFundamentals.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="min-w-0">
+                          <button onClick={() => navigate(`/app/company/${p.id}`)}
+                            className={`text-sm text-left truncate transition-colors ${p.id === company.id ? 'font-semibold text-brand-teal' : 'text-primary-text hover:text-brand-teal'}`}>
+                            {p.name}{p.id === company.id && ' · this issuer'}
+                          </button>
+                          <p className="t-caption truncate">{p.sectorName}</p>
+                        </div>
+                        <span className="font-mono-nums text-sm text-right text-primary-text">{p.fundamental.score}<span className="text-muted-text">/200</span></span>
+                        <div className="flex justify-end"><GradeBadge grade={p.fundamental.grade} compact /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -833,89 +867,9 @@ export const CompanyPage: React.FC = () => {
               </div>
             )}
 
-            {/* ── NCD ISSUANCES ── */}
-            {section === 'ncd' && (
-              <div>
-                <h2 className="text-base font-semibold text-primary-text mb-5">NCD Issuances</h2>
-                <div className="glass-card overflow-hidden mb-6">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                          <th className="text-left px-5 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">ISIN</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Coupon</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">YTM</th>
-                          <th className="text-center px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Tenor</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Size (₹ Cr)</th>
-                          <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide">Maturity</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {report.ncdIssuances.map(n => (
-                          <tr key={n.isin} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: n.current ? 'rgba(45,212,191,0.06)' : 'transparent' }}
-                            onMouseEnter={e => { if (!n.current) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                            onMouseLeave={e => { if (!n.current) e.currentTarget.style.background = 'transparent'; }}>
-                            <td className="px-5 py-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono-nums text-xs text-brand-teal">{n.isin}</span>
-                                {n.current && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}>Current</span>}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.coupon.toFixed(2)}%</td>
-                            <td className="px-4 py-3 text-right font-mono-nums font-semibold text-brand-teal">{n.ytm.toFixed(2)}%</td>
-                            <td className="px-4 py-3 text-center text-muted-text text-xs">{n.tenor}</td>
-                            <td className="px-4 py-3 text-right font-mono-nums text-primary-text">{n.size.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-xs text-muted-text">{n.maturity}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Issuance structure cards */}
-                <h3 className="font-semibold text-primary-text text-sm mb-3">Issuance Structure</h3>
-                <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                  {report.issuanceStructures.map(s => (
-                    <div key={s.isin} className="glass-card p-5" style={s.current ? { borderColor: 'rgba(45,212,191,0.25)' } : {}}>
-                      <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <span className="font-mono-nums text-sm text-brand-teal">{s.isin}</span>
-                        {s.current && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase" style={{ background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' }}>Current</span>}
-                      </div>
-                      <div className="space-y-1.5 text-xs">
-                        {[
-                          ['Instrument', s.instrument],
-                          ['Ranking', s.ranking],
-                          ['Coupon', `${s.coupon.toFixed(2)}% · ${s.couponFrequency}`],
-                          ['YTM (orig → curr)', `${s.originalYtm.toFixed(2)}% → ${s.currentYtm.toFixed(2)}%`],
-                          ['Face value', s.faceValueLabel],
-                          ['Issue size', `₹${s.issueSize.toLocaleString()} Cr`],
-                          ['Allotment', s.allotmentDate],
-                          ['Maturity', s.maturity],
-                          ['Residual tenor', `${s.residualDays} days`],
-                          ['Security cover', s.securityCover],
-                          ['Step clause', s.stepClause],
-                          ['Mandatory redemption', s.redemptionTrigger],
-                        ].map(([k, v]) => (
-                          <div key={k} className="flex gap-3 justify-between">
-                            <span className="text-muted-text shrink-0">{k}</span>
-                            <span className="text-primary-text text-right">{v}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Covenants */}
-                <h3 className="font-semibold text-primary-text text-sm mb-3">Financial Covenants</h3>
-                <CovenantTable covenants={report.covenants} />
-
-                <div className="p-4 rounded-xl text-xs text-muted-text leading-relaxed mt-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                  YTM figures are indicative as of the research date. Actual secondary-market YTM may vary. This is not an offer to buy or sell securities.
-                </div>
-              </div>
-            )}
+            {/* NCD issuances, issuance structure and covenants were removed from the
+                issuer page (§1b): they are instrument-level. They now live on
+                /app/isin/:isin, reachable from the Active ISINs section. */}
 
             {/* ── SECTOR OUTLOOK ── */}
             {section === 'sector' && (
@@ -946,17 +900,15 @@ export const CompanyPage: React.FC = () => {
                         { label: 'Sector / Sub-sector', value: `${company.sector} · ${company.subSector}` },
                         { label: 'Established', value: company.established },
                         { label: 'Headquarters', value: company.hq },
-                        { label: 'External Rating', value: `${company.externalRating} (${company.ratingAgency}, ${company.ratingDate})` },
-                        { label: 'Our Recommendation', value: company.recommendation },
-                        { label: 'Fundamental Score', value: `${company.healthScore * 5}/500 · ${company.healthScore}% · Rating ${company.internalRating}` },
-                        { label: 'Internal Rating', value: `${company.internalRating}/15` },
-                        { label: 'Combined Score', value: company.combinedScore },
+                        { label: 'External Rating', value: `${externalRatingLabel(company.externalRating)} (${externalRatingLabel(company.ratingAgency)}${isPlaceholder(company.ratingDate) ? '' : `, ${company.ratingDate}`})` },
+                        // Issuer-level only. Recommendation, Total Score, Rating and YTM are
+                        // instrument-level and live on the ISIN page (§1).
+                        { label: 'Fundamental Score', value: issuerScore ? `${issuerScore.score}/${issuerScore.max} · ${issuerScore.pct}%` : '—' },
                         { label: 'GNPA (latest)', value: latest(report.financials.assetQuality, 'GNPA') },
                         { label: 'NNPA (latest)', value: latest(report.financials.assetQuality, 'NNPA') },
                         { label: 'Total CAR (latest)', value: latest(report.financials.capitalization, 'Total CAR') },
                         { label: 'Leverage (latest)', value: latest(report.financials.capitalization, 'Leverage') },
                         { label: 'On-book AUM (latest)', value: `₹${latest(report.financials.assetQuality, 'On-book AUM')} Cr` },
-                        { label: 'Current NCD YTM', value: `${report.yieldOverview.currentYtm.toFixed(2)}%` },
                       ].map((row, i) => (
                         <tr key={row.label} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                           <td className="px-5 py-3 text-xs font-medium text-muted-text w-52">{row.label}</td>

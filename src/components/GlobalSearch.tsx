@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Building2, Receipt } from 'lucide-react';
 import { companies } from '../data/companies';
-import { allIsins, getIsinScore } from '../data/isins';
+import { allIsins, getIsinScore, getIssuerFundamental } from '../data/isins';
 import { sectorMeta } from '../data/sectors';
+import { externalRatingLabel, isPlaceholder } from '../data/display';
 
 // Global search — matches a company by name/sector (fuzzy) or an ISIN (prefix/exact).
 // Results are grouped (Companies / Instruments) and keyboard-navigable: ↑/↓ move,
@@ -18,15 +19,28 @@ interface Hit {
   illustrative?: boolean;
 }
 
-// Subsequence match, so "krzy" finds "KrazyBee" and "gold" finds the sector.
-const fuzzy = (haystack: string, needle: string): boolean => {
+// Company matching is a genuine substring/token match on name, sector or sub-sector.
+//
+// A subsequence matcher was too loose (§8): "INE" matched Avanti, Keertana, Spandana
+// and Midland because their letters appear in order somewhere in the name. An ISIN
+// query must not drag in unrelated companies.
+const tokenMatch = (haystack: string, needle: string): boolean => {
   const h = haystack.toLowerCase();
   const n = needle.toLowerCase().trim();
   if (!n) return false;
   if (h.includes(n)) return true;
-  let i = 0;
-  for (const ch of h) { if (ch === n[i]) i++; if (i === n.length) return true; }
-  return false;
+  // Also match on word starts, so "keer fin" finds "Keertana Finserv".
+  const words = h.split(/[^a-z0-9]+/).filter(Boolean);
+  return n.split(/\s+/).every(part => words.some(w => w.startsWith(part)));
+};
+
+const matchesCompany = (c: { name: string; sector: string; subSector: string; id: string }, term: string): boolean =>
+  tokenMatch(c.name, term) || tokenMatch(c.sector, term) || tokenMatch(c.subSector, term) || tokenMatch(c.id, term);
+
+/** Does the query look like an ISIN or an ISIN fragment? Those rank Instruments first. */
+const looksLikeIsin = (term: string): boolean => {
+  const t = term.trim().toUpperCase();
+  return /^INE/.test(t) || (/^[A-Z0-9]{4,}$/.test(t) && /\d/.test(t));
 };
 
 export const GlobalSearch: React.FC<{ placeholder?: string; autoFocus?: boolean }> = ({
@@ -42,20 +56,28 @@ export const GlobalSearch: React.FC<{ placeholder?: string; autoFocus?: boolean 
     const term = q.trim();
     if (term.length < 2) return [];
 
+    // Company rows are ISSUER-LEVEL ONLY (§1d): no Total Score, Rating or
+    // recommendation — those require a specific instrument.
     const companyHits: Hit[] = companies
-      .filter(c => fuzzy(c.name, term) || fuzzy(c.subSector, term) || fuzzy(c.sector, term) || fuzzy(c.id, term))
-      .map(c => ({
-        kind: 'company' as const,
-        id: c.id,
-        title: c.name,
-        subtitle: `${c.sector} · ${c.subSector}`,
-        trailing: c.externalRating,
-      }));
+      .filter(c => matchesCompany(c, term))
+      .map(c => {
+        const f = getIssuerFundamental(c.id);
+        return {
+          kind: 'company' as const,
+          id: c.id,
+          title: c.name,
+          subtitle: `${c.sector} · ${c.subSector}${isPlaceholder(c.hq) ? '' : ` · ${c.hq}`}`,
+          trailing: f ? `Fundamental ${f.score}/200` : externalRatingLabel(c.externalRating),
+        };
+      });
 
-    // ISINs match on prefix/exact only — a fuzzy ISIN match is noise, not a feature.
+    // ISINs match on prefix/exact, or via a real match on their issuer's name.
     const upper = term.toUpperCase();
     const isinHits: Hit[] = allIsins()
-      .filter(i => i.isin.toUpperCase().startsWith(upper) || fuzzy(companies.find(c => c.id === i.issuerId)?.name ?? '', term))
+      .filter(i => {
+        const issuer = companies.find(c => c.id === i.issuerId);
+        return i.isin.toUpperCase().includes(upper) || (issuer ? matchesCompany(issuer, term) : false);
+      })
       .map(i => {
         const issuer = companies.find(c => c.id === i.issuerId);
         const s = getIsinScore(i.isin);
@@ -64,12 +86,16 @@ export const GlobalSearch: React.FC<{ placeholder?: string; autoFocus?: boolean 
           id: i.isin,
           title: i.isin,
           subtitle: `${issuer?.name ?? i.issuerId} · ${sectorMeta(i.sector).name}${i.residualTenor ? ` · ${i.residualTenor}` : ''}`,
+          // Instrument rows keep Total/Rating — they identify a specific instrument (§1d).
           trailing: s ? `${s.total}/500 · R${s.rating}` : 'Not yet assessed',
           illustrative: i.illustrative,
         };
       });
 
-    return [...companyHits.slice(0, 5), ...isinHits.slice(0, 6)];
+    // An ISIN-shaped query ranks Instruments first (§8).
+    return looksLikeIsin(term)
+      ? [...isinHits.slice(0, 8), ...companyHits.slice(0, 3)]
+      : [...companyHits.slice(0, 5), ...isinHits.slice(0, 6)];
   }, [q]);
 
   useEffect(() => setCursor(0), [q]);
@@ -95,10 +121,18 @@ export const GlobalSearch: React.FC<{ placeholder?: string; autoFocus?: boolean 
     if (e.key === 'Enter' && open && hits[cursor]) { e.preventDefault(); go(hits[cursor]); }
   };
 
-  const groups: { label: string; icon: typeof Building2; items: Hit[] }[] = [
-    { label: 'Companies', icon: Building2, items: hits.filter(h => h.kind === 'company') },
-    { label: 'Instruments', icon: Receipt, items: hits.filter(h => h.kind === 'isin') },
-  ].filter(g => g.items.length > 0);
+  // Group order follows the ranking, so an ISIN query leads with Instruments (§8).
+  const groups: { label: string; icon: typeof Building2; items: Hit[] }[] =
+    (hits[0]?.kind === 'isin'
+      ? [
+          { label: 'Instruments', icon: Receipt, items: hits.filter(h => h.kind === 'isin') },
+          { label: 'Companies', icon: Building2, items: hits.filter(h => h.kind === 'company') },
+        ]
+      : [
+          { label: 'Companies', icon: Building2, items: hits.filter(h => h.kind === 'company') },
+          { label: 'Instruments', icon: Receipt, items: hits.filter(h => h.kind === 'isin') },
+        ]
+    ).filter(g => g.items.length > 0);
 
   const showPanel = open && q.trim().length >= 2;
 
@@ -126,8 +160,9 @@ export const GlobalSearch: React.FC<{ placeholder?: string; autoFocus?: boolean 
         <div
           id="global-search-results"
           role="listbox"
-          className="absolute top-full mt-1 left-0 right-0 rounded-lg z-50 overflow-hidden max-h-[70vh] overflow-y-auto"
-          style={{ background: 'rgba(18,42,44,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(18px)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}
+          // Fully opaque: a translucent panel let the trend chart bleed through (§7.1).
+          className="overlay-surface absolute top-full mt-1 left-0 right-0 overflow-hidden max-h-[70vh] overflow-y-auto"
+          style={{ zIndex: 'var(--z-dropdown)' as unknown as number }}
         >
           {!hits.length && <p className="px-4 py-3 text-xs text-muted-text">No company or ISIN matches “{q}”.</p>}
 

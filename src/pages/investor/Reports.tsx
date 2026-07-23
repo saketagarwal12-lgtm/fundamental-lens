@@ -10,10 +10,7 @@ const reports = [
   { companyId: 'vaikha', date: 'Mar 2026', type: 'Full Fundamental Research Report', pages: 26, new: false },
 ];
 
-const recStyle = (rec: string): React.CSSProperties =>
-  rec === 'Subscribe' ? { color: '#34D399' } :
-  rec === 'Avoid' ? { color: '#FB7185' } :
-  { color: '#FBBF24' };
+// (recStyle removed — recommendations are instrument-level, §1d.)
 
 export const Reports: React.FC = () => {
   const navigate = useNavigate();
@@ -55,7 +52,8 @@ export const Reports: React.FC = () => {
                   <span>{r.type}</span>
                   <span className="flex items-center gap-1"><Clock size={11} /> {r.date}</span>
                   <span>{r.pages} pages</span>
-                  <span className="font-medium" style={recStyle(co.recommendation)}>{co.recommendation}</span>
+                  {/* Issuer-level listing — no recommendation (§1d). */}
+                  <span className="font-mono-nums">{co.sector} · {co.subSector}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">

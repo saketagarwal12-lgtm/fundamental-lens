@@ -1,12 +1,15 @@
 import { ScoreGauge } from './ScoreGauge';
 import { ScoreTrend } from './ScoreTrend';
-import { ScoreComposition } from './ScoreComposition';
 import { FactorAssessment } from './FactorAssessment';
 import { getScaledScore, getIssuerTrend, scoreBand } from '../data/score';
 import type { CompanyReport } from '../data/reports';
 
-// Entity-level hero: Fundamental (Issuer /200) gauge + trend + factor assessment,
-// then the full Total Score (0–500) composition.
+// Entity-level hero: Fundamental (Issuer /200) gauge + trend + factor assessment.
+//
+// ISSUER-LEVEL ONLY. The Total Score /500 and its Rating are ISIN-level — they
+// fold in Issuance and Pricing, which are properties of a specific instrument,
+// not of the issuer. The Total Score composition therefore lives on the ISIN
+// page; do not reintroduce ScoreComposition here.
 export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }) => {
   const scaled = getScaledScore(report);
   const issuer = scaled.components.find(c => c.key === 'issuer')!;
@@ -43,8 +46,8 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
         )}
       </div>
 
-      {/* Row 2 — gauge · factor assessment · total score */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,28fr)_minmax(0,36fr)_minmax(0,36fr)] gap-5 items-stretch">
+      {/* Row 2 — gauge · factor assessment */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,32fr)_minmax(0,68fr)] gap-5 items-stretch">
         <div className="glass-card-elevated p-5 flex flex-col items-center justify-center text-center">
           <ScoreGauge score={issuer.score} max={issuer.max} pct={issuer.pct} caption="Fundamental Score" />
           <div className="mt-4 pt-4 w-full" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
@@ -53,13 +56,6 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
           </div>
         </div>
         <FactorAssessment pillars={issuerPillars} />
-        <ScoreComposition
-          components={scaled.components}
-          scorecard={report.scorecard}
-          combinedScore={scaled.score}
-          combinedPct={scaled.pct}
-          rating={scaled.rating}
-        />
       </div>
     </section>
   );

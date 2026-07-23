@@ -86,6 +86,41 @@ a **full browser reload logs you out** (state is not persisted). Role-guarded ro
 
 ---
 
+## 4a. Issuer-level vs ISIN-level presentation (the rule)
+
+**Total Score /500 and its 1–10 Rating are ISIN-level**, because they fold in Issuance
+(structure, liquidity, collateral, covenants) and Pricing — properties of a *specific instrument*,
+not of the issuer. Nothing ISIN-derived may appear until the user has selected an ISIN.
+
+| Surface | Shows |
+|---|---|
+| `/app/company/:id` | **Fundamental /200 only** + its two pillars/10 factors, issuer research, Economic & Sector /50, issuer-level peer comparison, Active ISINs |
+| `/app/isin/:isin` | The full four assessments + **Total /500 · Rating N**, covenants, instrument terms, recommendation |
+| Search — Company rows | issuer-level only (name, sector, HQ, Fundamental /200). **No** Total, Rating or recommendation |
+| Search — Instrument rows | keep `Total /500 · Rating N` |
+| `/app/compare` Mode A | fundamentals only — no composition, no yield |
+| `/app/compare` Mode B | ISIN-level, including Totals |
+| `/app/sectors`, `/app/sector/:id` | rank/aggregate by Fundamental /200 |
+| Dashboard / watchlist / reports | issuer cards → Fundamental /200; **holding rows are instruments**, so Total/Rating is correct there |
+
+**Removed from the issuer page** (all now ISIN-level): the four-bar `ScoreComposition`,
+`Combined: x/5.00`, `Internal: n/15`, the recommendation badge, Yield Overview / `YieldGauge` /
+`PeerYieldRange`, the entire **NCD Issuances** section (issuance structure + `CovenantTable`),
+and the `'ncd'` `Section` key.
+
+> **Exception, by design:** the **Active ISINs** panel on the issuer page *does* show each row's
+> `Total /500 · Rating`. Each row is an instrument, so §1d's instrument-row rule applies. This is
+> the gateway to ISIN-level content, not a leak.
+
+`display.ts` carries the presentation guards: `externalRatingLabel` (strips `TODO` markers,
+parenthetical *and* dash-delimited, → "Under review"), `dataGapText` (turns `TODO: <source> — …`
+into "Pending source document (<source>). …"), `isPlaceholder` / `textOrDash`, and
+`issuerLevelClaims()` which filters instrument-level lines out of `recommendationRationale` /
+`investorProtection`. That filter is deliberately **phrase**-precise — bare `secured` / `listed`
+would wrongly strip issuer-level copy like "secured gold book" or "listed issuer".
+
+---
+
 ## 5. The score model (terminology — important)
 
 - **Fundamental Score = the Issuer score only** (Business & Management + Financial Analysis

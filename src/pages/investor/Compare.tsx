@@ -2,13 +2,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Scale, Check, ArrowUpRight, ArrowDownRight, X, Building2, Receipt } from 'lucide-react';
 import { ScoreGauge } from '../../components/ScoreGauge';
-import { ScoreComposition } from '../../components/ScoreComposition';
-import { YieldGauge } from '../../components/YieldGauge';
 import { GradeBadge, gradeBarColor } from '../../components/GradeBadge';
 import { IsinCompareGrid } from '../../components/IsinCompareGrid';
 import { IllustrativeBadge } from '../../components/IllustrativeBadge';
-import { recStyle, rankExtremes, cellRing } from '../../components/compareGrid';
-import { getReport } from '../../data/reports';
+import { rankExtremes, cellRing } from '../../components/compareGrid';
+import { externalRatingLabel } from '../../data/display';
 import { coveredIssuers, issuerMetrics, RATIOS, SECTORS, sectorMeta } from '../../data/sectors';
 import type { SectorId, IssuerMetrics } from '../../data/sectors';
 import { allIsins } from '../../data/isins';
@@ -280,9 +278,9 @@ export const Compare: React.FC = () => {
                     </div>
                     <button onClick={() => toggle(m.id)} aria-label={`Remove ${m.shortName}`} className="text-muted-text hover:text-primary-text shrink-0"><X size={15} /></button>
                   </div>
+                  {/* Mode A is issuer-level: no recommendation (§1d). */}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={recStyle(m.recommendation)}>{m.recommendation}</span>
-                    <span className="t-caption">{m.externalRating}</span>
+                    <span className="t-caption">{externalRatingLabel(m.externalRating)}</span>
                   </div>
                 </div>
               ))}
@@ -310,16 +308,9 @@ export const Compare: React.FC = () => {
               })()}
             </div>
 
-            {/* Total Score composition */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: cols }}>
-              {chosen.map(m => {
-                const report = getReport(m.id)!;
-                return (
-                  <ScoreComposition key={m.id} components={m.components} scorecard={report.scorecard}
-                    combinedScore={m.total.score} combinedPct={m.total.pct} rating={m.total.rating} combinedMax={m.total.max} />
-                );
-              })}
-            </div>
+            {/* Total Score composition removed from Mode A (§1d): Total /500 and its
+                Rating fold in Issuance and Pricing, which are instrument-level.
+                Switch to Mode B to compare instruments. */}
 
             {/* Pillar grades */}
             <div className="glass-card p-5">
@@ -380,18 +371,8 @@ export const Compare: React.FC = () => {
               </div>
             </div>
 
-            {/* Yield & spread */}
-            <div className="glass-card p-5">
-              <h3 className="t-h3 text-primary-text mb-4">Yield &amp; spread</h3>
-              <div className="grid gap-4" style={{ gridTemplateColumns: cols }}>
-                {chosen.map(m => (
-                  <div key={m.id}>
-                    <p className="t-caption mb-2 text-center">{m.shortName}</p>
-                    <YieldGauge data={m.yieldOverview} compact />
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Yield & spread removed from Mode A (§1d) — yield is a property of an
+                instrument, not an issuer. It is compared in Mode B. */}
 
             {/* Bridge into the instrument level */}
             <div className="glass-card p-5 flex items-center justify-between gap-4 flex-wrap"

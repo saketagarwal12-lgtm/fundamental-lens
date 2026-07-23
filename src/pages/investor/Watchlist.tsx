@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Star, Plus, Search, X } from 'lucide-react';
 import { companies } from '../../data/companies';
 import { ScoreRing } from '../../components/ScoreRing';
+import { getIssuerFundamental } from '../../data/isins';
+import { externalRatingLabel } from '../../data/display';
 
 export const Watchlist: React.FC = () => {
   const navigate = useNavigate();
@@ -102,17 +104,23 @@ export const Watchlist: React.FC = () => {
                       <X size={15} />
                     </button>
                   </div>
+                  {/* Watchlist entries are issuers — no recommendation (§1d), which is
+                      made on an instrument at a price. */}
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <span
                       className="text-xs px-2 py-0.5 rounded text-muted-text"
                       style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-                    >{c.externalRating}</span>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded font-medium"
-                      style={c.recommendation === 'Subscribe' ? { background: 'rgba(52,211,153,0.15)', color: '#34D399' } :
-                        c.recommendation === 'Avoid' ? { background: 'rgba(251,113,133,0.15)', color: '#FB7185' } :
-                        { background: 'rgba(251,191,36,0.15)', color: '#FBBF24' }}
-                    >{c.recommendation}</span>
+                    >{externalRatingLabel(c.externalRating)}</span>
+                    {(() => {
+                      const f = getIssuerFundamental(c.id);
+                      return f ? (
+                        <span className="text-xs px-2 py-0.5 rounded font-mono-nums font-medium"
+                          style={{ background: 'rgba(45,212,191,0.12)', color: '#2DD4BF' }}
+                          title="Fundamental Score — issuer level">
+                          {f.score}/200
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </div>
