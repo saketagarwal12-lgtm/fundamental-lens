@@ -384,6 +384,47 @@ duplicate history entry. Keyboard-focusable with a visible ring, `aria-label="Fu
 
 ---
 
+## 7c. Financial Analysis — the indicator model (§3)
+
+Financial Analysis (issuer-level, one of the two Fundamental Score pillars) has **five categories**:
+Profitability · Asset Quality · Liquidity & Funding · Capitalization · **Off-Balance-Sheet
+Transactions** (new). They are the second-level pills under the Financial Analysis section.
+
+- **`data/financialAnalysis.ts`** — the schema + builders. `buildIndicatorTables(report)` maps the
+  figures already in `reports.ts` into the full §3c row schema per category; `buildAssetQualityDetail`,
+  `buildBorrowingProfile`, `buildAlmSummary` derive the side panels from existing report fields.
+  **No computation** — it is label-matching + passthrough. A row we have no value for renders `NA`;
+  the full row set is always present so the table shape is stable.
+- **`<IndicatorTable>`** — sticky first column + grouped two-row header (Actuals Annual / Quarterly),
+  `NA` for gaps, negatives bracketed in the Weak colour, N periods derived from the data (never
+  hardcoded). LTM / 3-Year-Average columns render only when the data carries them (it doesn't yet).
+- **`<BreakupPanel>`** (chart + table) drives AUM-by-product, geography, and LTV buckets under Asset
+  Quality. **`<BorrowingProfilePanel>` / `<AlmSummaryPanel>`** (`LiquidityFundingPanels.tsx`) sit
+  under Liquidity & Funding.
+
+**Populated from existing authored data** (real, no fabrication): headline rows across all five
+categories (NIM, ROAA, GNPA/NNPA, CAR, leverage, net worth, PAT, etc., mapped from `report.financials`);
+Asset-Quality breakups (product mix, geography, Keertana's LTV buckets, segment GNPA/NNPA, collection
+efficiency); borrowing composition by funding type + top-10 concentration; the ALM summary.
+
+**Per-issuer / cross-cutting TODO — pending source-document population (§3g):**
+- [ ] The **bulk of the §3c indicator rows render `NA`** — only the ~5–8 headline rows per category
+      exist in the current seed. Populate the rest from the three PDFs
+      (`RA/Midland/…`, `RA/Avanti/INE0BNQ07154/…`, `RA/Keertana/INE0NES07220/…`).
+- [ ] **Off-Balance-Sheet is entirely `NA`** for all issuers — no DA/securitization/stressed-sale
+      figures in the seed. Rows are shown for completeness with a note.
+- [ ] **Lender-level borrowing rows** (LenderRow: name · type · funding type · outstanding · %) are
+      not authored — the panel shows funding-type composition only and says so. Do **not** invent
+      lender names.
+- [ ] **Bucketed ALM** (1–7d … 1826–3652d with the cumulative-gap chart) and **Stage 1/2/3 ECL
+      movement** and **top-20 borrowers** are not in the seed — panels omitted with a note.
+- [ ] **LTM and 3-Year-Average columns** need authored LTM/CAGR values before they render.
+- [ ] KrazyBee/Spandana keep their existing financial data; the same mapping applies to them.
+- [ ] Midland has no `reports.ts` entry, so it has no Financial Analysis tab (shows the coverage
+      placeholder) — author a full report to unlock it.
+
+---
+
 ## 7b. Layout & UI conventions (§4–§9)
 
 - **One search bar.** `GlobalSearch` mounts once, in each layout's top bar. The dashboard-hero

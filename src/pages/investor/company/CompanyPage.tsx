@@ -22,6 +22,10 @@ import type { RatingLensPillar } from '../../../components/RatingLens';
 import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
 import { PageNav } from '../../../components/PageNav';
 import { SectionBar } from '../../../components/SectionBar';
+import { IndicatorTable } from '../../../components/IndicatorTable';
+import { BreakupPanel } from '../../../components/BreakupPanel';
+import { BorrowingProfilePanel, AlmSummaryPanel } from '../../../components/LiquidityFundingPanels';
+import { buildIndicatorTables, buildAssetQualityDetail, buildBorrowingProfile, buildAlmSummary } from '../../../data/financialAnalysis';
 import { companies } from '../../../data/companies';
 import { getIsinsForIssuer } from '../../../data/isins';
 import { covenantSignalsForIssuer } from '../../../data/covenantMonitor';
@@ -70,67 +74,7 @@ const FIN_LABELS: Record<string, string> = {
   assetQuality: 'Asset Quality',
 };
 
-const FinancialPanel: React.FC<{ sec: FinancialSection | undefined; sectionKey: string }> = ({ sec, sectionKey }) => {
-  if (!sec) return <p className="text-muted-text text-sm p-4">Select a financial section.</p>;
-  const periods = sec.metrics[0]?.values.map(v => v.period) ?? [];
-  const fmt = (n: number) => Math.abs(n) >= 1000 ? n.toLocaleString('en-IN') : String(n);
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <h3 className="t-h3 text-primary-text">{FIN_LABELS[sectionKey] ?? 'Financials'} — {sec.grade}</h3>
-        <GradeBadge grade={sec.grade} compact />
-      </div>
-
-      {/* Full ratio table — sticky indicator column + sticky header, N periods */}
-      <div className="overflow-x-auto rounded-xl mb-5 relative" style={{ border: '1px solid rgba(255,255,255,0.08)', maxHeight: 520 }}>
-        <table className="text-sm border-separate" style={{ borderSpacing: 0, minWidth: '100%' }}>
-          <thead>
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide sticky left-0 top-0 z-20"
-                style={{ background: 'rgba(13,30,32,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 200 }}>
-                Indicator
-              </th>
-              {periods.map(p => (
-                <th key={p} className="text-right px-4 py-3 text-xs font-medium text-muted-text uppercase tracking-wide sticky top-0 z-10"
-                  style={{ background: 'rgba(13,30,32,0.98)', borderBottom: '1px solid rgba(255,255,255,0.1)', minWidth: 92 }}>
-                  {p}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sec.metrics.map(m => (
-              <tr key={m.label} className="group">
-                <td className="px-4 py-2.5 sticky left-0 z-10"
-                  style={{ background: 'rgba(11,26,28,0.98)', borderBottom: '1px solid rgba(255,255,255,0.05)', minWidth: 200 }}>
-                  <span className="text-primary-text text-[13px]">{m.label}</span>
-                  {m.unit && <span className="text-[11px] text-muted-text ml-1.5">{m.unit}</span>}
-                </td>
-                {m.values.map((v, i) => {
-                  const neg = v.value !== null && v.value < 0;
-                  return (
-                    <td key={i} className="px-4 py-2.5 text-right font-mono-nums text-[13px]"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: neg ? '#FB7185' : '#E9F3F1' }}>
-                      {v.value === null ? <span className="text-muted-text">—</span>
-                        : neg ? `(${fmt(Math.abs(v.value))})` : fmt(v.value)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="t-caption mb-5">Negative values shown in brackets and the Weak colour. "—" where the report does not report a figure.</p>
-
-      {/* Summary → full write-up + quarterly update + outlook */}
-      <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <p className="text-xs font-semibold text-muted-text uppercase tracking-wider mb-2">Commentary</p>
-        <ExpandableAnalysis variant="financial" commentary={sec.commentary} quarterly={sec.quarterly} outlook={sec.outlook} />
-      </div>
-    </div>
-  );
-};
+// (FinancialPanel removed — Financial Analysis now uses <IndicatorTable> per §3.)
 
 // ── Donut helper ────────────────────────────────────────────────────────────────
 
@@ -169,7 +113,7 @@ export const CompanyPage: React.FC = () => {
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>('overview');
   const [activeFactorName, setActiveFactorName] = useState<string | null>(null);
-  const [financialTab, setFinancialTab] = useState('capitalization');
+  const [financialTab, setFinancialTab] = useState('profitability');
   const [aiQuery, setAiQuery] = useState('');
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -230,12 +174,13 @@ export const CompanyPage: React.FC = () => {
     { key: 'ai', label: 'Ask AI', icon: Bot },
   ];
 
-  // Financial Analysis sub-sections (Tier-2 hierarchy)
+  // Financial Analysis categories (§3a) — five, incl. Off-Balance-Sheet.
   const finChildren: { tab: string; label: string }[] = [
-    { tab: 'capitalization', label: 'Capitalization' },
-    { tab: 'fundingLiquidity', label: 'Funding & liquidity' },
     { tab: 'profitability', label: 'Profitability' },
-    { tab: 'assetQuality', label: 'Asset quality' },
+    { tab: 'assetQuality', label: 'Asset Quality' },
+    { tab: 'liquidityFunding', label: 'Liquidity & Funding' },
+    { tab: 'capitalization', label: 'Capitalization' },
+    { tab: 'offBalanceSheet', label: 'Off-Balance-Sheet' },
   ];
 
   const firstName = company.name.split(' ')[0];
@@ -567,115 +512,88 @@ export const CompanyPage: React.FC = () => {
               </div>
             )}
 
-            {/* ── FINANCIAL ANALYSIS ── */}
-            {section === 'financial' && (
-              <div>
-                <h2 className="t-h2 text-primary-text mb-5">Financial Analysis</h2>
-                <div className="inline-flex items-center gap-1 p-1 rounded-full mb-6 flex-wrap" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {Object.keys(report.financials).map(k => {
-                    const on = financialTab === k;
-                    return (
-                      <button key={k} onClick={() => setFinancialTab(k)} aria-pressed={on}
-                        className="px-3 py-1 rounded-full text-[13px] font-medium leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal"
-                        style={on ? { background: 'linear-gradient(135deg,#2DD4BF,#22D3EE)', color: '#0B1F20' } : { background: 'transparent', color: '#9CB3B1' }}>
-                        {k === 'fundingLiquidity' ? 'Funding & Liquidity' : k === 'capitalization' ? 'Capitalization' : k === 'profitability' ? 'Profitability' : 'Asset Quality'}
-                      </button>
-                    );
-                  })}
-                </div>
-                <FinancialPanel sec={report.financials[financialTab]} sectionKey={financialTab} />
 
-                {/* Funding & liquidity extras */}
-                {financialTab === 'fundingLiquidity' && (
-                  <div className="grid sm:grid-cols-2 gap-5 mt-5">
-                    <div className="glass-card p-5">
-                      <h3 className="font-semibold text-primary-text text-sm mb-4 flex items-center gap-2"><Layers size={15} style={{ color: '#2DD4BF' }} /> Funding Mix</h3>
-                      <div className="space-y-2">
-                        {report.fundingMix.map((f, i) => (
-                          <div key={f.name} className="flex items-center gap-3">
-                            <span className="text-xs text-muted-text w-28 shrink-0 truncate">{f.name}</span>
-                            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                              <div className="h-full rounded-full" style={{ width: `${f.pct}%`, background: VIZ_COLORS[i % VIZ_COLORS.length] }} />
-                            </div>
-                            <span className="font-mono-nums text-xs text-primary-text w-9 text-right">{f.pct}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="glass-card p-5">
-                      <h3 className="font-semibold text-primary-text text-sm mb-4">ALM &amp; Liquidity</h3>
-                      <div className="space-y-3 text-xs">
-                        <div className="flex justify-between"><span className="text-muted-text">Avg asset tenor</span><span className="font-mono-nums text-primary-text">{report.alm.assetTenorMonths}m</span></div>
-                        <div className="flex justify-between"><span className="text-muted-text">Avg liability tenor</span><span className="font-mono-nums text-primary-text">{report.alm.liabilityTenorMonths}m</span></div>
-                        <div className="flex justify-between"><span className="text-muted-text">LCR</span><span className="font-mono-nums text-brand-teal font-semibold">{report.alm.lcr}%</span></div>
-                        {report.alm.ccePctOf12mRepayments != null && <div className="flex justify-between"><span className="text-muted-text">CCE / 12m repayments</span><span className="font-mono-nums text-primary-text">{report.alm.ccePctOf12mRepayments}%</span></div>}
-                        <p className="text-muted-text pt-2 leading-relaxed" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>{report.alm.cumulativeGapNote}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            {/* ── FINANCIAL ANALYSIS (§3) — five categories, indicator tables + panels ── */}
+            {section === 'financial' && (() => {
+              const tables = buildIndicatorTables(report);
+              const current = tables.find(t => t.category === financialTab) ?? tables[0];
+              const aq = buildAssetQualityDetail(report);
+              return (
+                <div className="space-y-5">
+                  <h2 className="t-h2 text-primary-text">
+                    Financial Analysis <span className="t-caption font-normal">· {current.label}</span>
+                  </h2>
 
-                {/* Asset-quality detail */}
-                {financialTab === 'assetQuality' && (
-                  <div className="mt-5 space-y-5">
-                    {report.segmentAssetQuality && (
-                      <div className="glass-card p-5">
-                        <h3 className="font-semibold text-primary-text text-sm mb-4">Asset Quality by Segment</h3>
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                              <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Segment</th>
-                              <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">GNPA</th>
-                              <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">NNPA</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {report.segmentAssetQuality.map(s => (
-                              <tr key={s.segment} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td className="py-2.5 text-primary-text text-xs">{s.segment}</td>
-                                <td className="py-2.5 text-right font-mono-nums text-xs" style={{ color: s.gnpa > 5 ? '#FB7185' : s.gnpa > 1 ? '#FBBF24' : '#34D399' }}>{s.gnpa.toFixed(2)}%</td>
-                                <td className="py-2.5 text-right font-mono-nums text-xs text-muted-text">{s.nnpa.toFixed(2)}%</td>
+                  <IndicatorTable table={current} />
+
+                  {/* Liquidity & Funding — borrowing profile + ALM (§3d) */}
+                  {financialTab === 'liquidityFunding' && (
+                    <div className="grid lg:grid-cols-2 gap-5">
+                      <BorrowingProfilePanel profile={buildBorrowingProfile(report)} />
+                      <AlmSummaryPanel alm={buildAlmSummary(report)} />
+                    </div>
+                  )}
+
+                  {/* Asset Quality — breakups + segment quality + collection (§3e) */}
+                  {financialTab === 'assetQuality' && (
+                    <div className="space-y-5">
+                      <div className="grid lg:grid-cols-2 gap-5">
+                        <BreakupPanel title="AUM by loan product" rows={aq.productMix} valueLabel="AUM" valuePrefix="₹" />
+                        <BreakupPanel title="Geographic breakup" rows={aq.geography} chart="bar" valueLabel="AUM" valuePrefix="₹" />
+                      </div>
+                      {aq.ltvBuckets && (
+                        <BreakupPanel title="Loan-book granularity — LTV buckets" rows={aq.ltvBuckets} chart="bar" />
+                      )}
+                      {aq.segmentAssetQuality && (
+                        <div className="glass-card p-5">
+                          <h3 className="t-h3 text-primary-text mb-4">Asset quality by segment</h3>
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                                <th className="text-left py-2 text-xs font-medium text-muted-text uppercase">Segment</th>
+                                <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">GNPA</th>
+                                <th className="text-right py-2 text-xs font-medium text-muted-text uppercase">NNPA</th>
                               </tr>
+                            </thead>
+                            <tbody>
+                              {aq.segmentAssetQuality.map(s => (
+                                <tr key={s.segment} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <td className="py-2.5 text-primary-text text-xs">{s.segment}</td>
+                                  <td className="py-2.5 text-right font-mono-nums text-xs" style={{ color: s.gnpa > 5 ? '#FB7185' : s.gnpa > 1 ? '#FBBF24' : '#34D399' }}>{s.gnpa.toFixed(2)}%</td>
+                                  <td className="py-2.5 text-right font-mono-nums text-xs text-muted-text">{s.nnpa.toFixed(2)}%</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      {aq.collectionEfficiency && (
+                        <div className="glass-card p-5">
+                          <h3 className="t-h3 text-primary-text mb-4">Collection efficiency trend</h3>
+                          <div className="flex items-end gap-4 h-32">
+                            {aq.collectionEfficiency.map(c => (
+                              <div key={c.period} className="flex-1 flex flex-col items-center gap-2">
+                                <div className="w-full rounded-t-lg flex items-end justify-center" style={{ height: `${c.value}%`, background: 'linear-gradient(180deg,#2DD4BF,#22D3EE)', minHeight: 8 }}>
+                                  <span className="font-mono-nums text-[11px] font-bold pb-1" style={{ color: '#0B1F20' }}>{c.value}%</span>
+                                </div>
+                                <span className="text-[11px] text-muted-text">{c.period}</span>
+                              </div>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    {report.ltvBuckets && (
-                      <div className="glass-card p-5">
-                        <h3 className="font-semibold text-primary-text text-sm mb-4">LTV Bucket Distribution</h3>
-                        <div className="space-y-2">
-                          {report.ltvBuckets.map((b, i) => (
-                            <div key={b.bucket} className="flex items-center gap-3">
-                              <span className="text-xs text-muted-text w-20 shrink-0 font-mono-nums">{b.bucket}</span>
-                              <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                                <div className="h-full rounded-full" style={{ width: `${b.pct}%`, background: VIZ_COLORS[i % VIZ_COLORS.length] }} />
-                              </div>
-                              <span className="font-mono-nums text-xs text-primary-text w-10 text-right">{b.pct}%</span>
-                            </div>
-                          ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {report.collectionEfficiency && (
-                      <div className="glass-card p-5">
-                        <h3 className="font-semibold text-primary-text text-sm mb-4">Collection Efficiency Trend</h3>
-                        <div className="flex items-end gap-4 h-32">
-                          {report.collectionEfficiency.map(c => (
-                            <div key={c.period} className="flex-1 flex flex-col items-center gap-2">
-                              <div className="w-full rounded-t-lg flex items-end justify-center" style={{ height: `${c.value}%`, background: 'linear-gradient(180deg,#2DD4BF,#22D3EE)', minHeight: 8 }}>
-                                <span className="font-mono-nums text-[11px] font-bold pb-1" style={{ color: '#0B1F20' }}>{c.value}%</span>
-                              </div>
-                              <span className="text-[11px] text-muted-text">{c.period}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                      )}
+                    </div>
+                  )}
+
+                  {/* Stage 1/2/3 movement + top-20 borrowers are pending source population (§3e). */}
+                  {financialTab === 'assetQuality' && (
+                    <p className="text-[11px] text-muted-text px-1">
+                      Stage 1/2/3 ECL movement and top-20 borrower concentration are pending source-document population.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── PEER COMPARISON ── */}
             {section === 'peers' && (
