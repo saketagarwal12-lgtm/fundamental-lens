@@ -31,13 +31,14 @@ export const FundamentalScore: React.FC<{ report: CompanyReport }> = ({ report }
 
   return (
     <section className="mb-8" aria-label="Fundamental Score">
-      {/* Row 1 — full-width trend (with share-price overlay for listed entities) */}
-      <div className="mb-5">
+      {/* Row 1 — full-width trend (with share-price overlay for listed entities).
+          Height reduced ~35% (§6) — full width kept; the gauge is unchanged. */}
+      <div className="mb-4">
         <ScoreTrend
           data={trend}
           title="Fundamental Score — 12-month trend"
           max={issuer.max}
-          height={280}
+          height={180}
           price={listed ? report.priceSeries : undefined}
           badge={badge}
         />

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Download, Bell, Star, ArrowLeft, ChevronDown, ChevronRight,
+  Download, Bell, Star,
   TrendingUp, MessageSquare, Send, BookOpen, ShieldCheck, Lightbulb,
-  Users, MapPin, Layers, AlertTriangle, ChevronsLeft, ChevronsRight,
+  Users, MapPin, Layers, AlertTriangle,
   LayoutGrid, Briefcase, LineChart as LineChartIcon, Scale, Award,
   Newspaper, Globe, Table, Bot, Database, SlidersHorizontal, Grid3x3, Receipt,
 } from 'lucide-react';
@@ -21,6 +21,7 @@ import { RatingLens } from '../../../components/RatingLens';
 import type { RatingLensPillar } from '../../../components/RatingLens';
 import { ActiveIsinsPanel } from '../../../components/ActiveIsinsPanel';
 import { PageNav } from '../../../components/PageNav';
+import { SectionBar } from '../../../components/SectionBar';
 import { companies } from '../../../data/companies';
 import { getIsinsForIssuer } from '../../../data/isins';
 import { covenantSignalsForIssuer } from '../../../data/covenantMonitor';
@@ -173,13 +174,8 @@ export const CompanyPage: React.FC = () => {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [readingMode, setReadingMode] = useState(false);
-  const [navCollapsed, setNavCollapsed] = useState(() => {
-    const saved = sessionStorage.getItem('fl-company-nav-collapsed');
-    if (saved !== null) return saved === '1';
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
-  });
-  const toggleNav = () => setNavCollapsed(v => { sessionStorage.setItem('fl-company-nav-collapsed', v ? '0' : '1'); return !v; });
-  const [finOpen, setFinOpen] = useState(false);
+  // Tier-2 nav is now a horizontal SectionBar (§5) — the collapse/expand state the
+  // old vertical panel needed is gone.
 
   const company = companies.find(c => c.id === id);
   const report: CompanyReport | undefined = getReport(id);
@@ -247,92 +243,9 @@ export const CompanyPage: React.FC = () => {
   const issuerScore = report ? getScaledScore(report).components.find(c => c.key === 'issuer') : undefined;
 
   return (
-    <div className="flex min-h-full page-fade">
-      {/* Tier 2 — single contextual section panel (off-canvas when collapsed) */}
-      <aside
-        className={`shrink-0 overflow-hidden transition-[width] duration-200 ease-out ${navCollapsed ? 'w-0' : 'w-60'}`}
-        style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderRight: navCollapsed ? 'none' : '1px solid rgba(255,255,255,0.07)' }}
-        aria-hidden={navCollapsed}
-      >
-        <div className="w-60">
-          <div className="px-4 h-14 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-            <button onClick={() => navigate('/app/dashboard')}
-              className="flex items-center gap-1.5 text-xs text-muted-text hover:text-brand-teal transition-colors">
-              <ArrowLeft size={13} /> Back to dashboard
-            </button>
-            <button onClick={toggleNav} aria-label="Hide sections"
-              className="flex items-center justify-center w-6 h-6 rounded text-muted-text hover:text-primary-text transition-colors"
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <ChevronsLeft size={15} />
-            </button>
-          </div>
-          <nav className="py-3 px-2 space-y-0.5 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 7rem)' }}>
-            {navItems.map(item => {
-              if (item.key === 'financial') {
-                const open = finOpen || section === 'financial';
-                return (
-                  <div key={item.key}>
-                    <button
-                      onClick={() => { setSection('financial'); setActiveFactorName(null); setFinOpen(o => !o); }}
-                      aria-expanded={open}
-                      className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${section === 'financial' ? 'nav-item-active' : 'nav-item-inactive'}`}
-                    >
-                      <item.icon size={15} className="shrink-0" />
-                      <span className="flex-1 truncate">{item.label}</span>
-                      {open ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />}
-                    </button>
-                    {open && (
-                      <div className="ml-4 mt-0.5 space-y-0.5" style={{ borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-                        {finChildren.map(ch => (
-                          <button key={ch.tab}
-                            onClick={() => { setSection('financial'); setFinancialTab(ch.tab); }}
-                            className={`w-full text-left pl-4 pr-3 py-1.5 rounded-md text-xs transition-colors ${section === 'financial' && financialTab === ch.tab ? 'text-brand-teal' : 'text-muted-text hover:text-primary-text'}`}
-                            style={section === 'financial' && financialTab === ch.tab ? { background: 'rgba(45,212,191,0.1)' } : {}}>
-                            {ch.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return (
-                <button key={item.key}
-                  onClick={() => { setSection(item.key); setActiveFactorName(null); }}
-                  className={`w-full flex items-center gap-2.5 text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
-                  <item.icon size={15} className="shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
-
-      {/* Collapsed Tier-2 → section icon rail (icons + hover tooltips), distinct from the far-left rail */}
-      {navCollapsed && (
-        <nav aria-label="Sections"
-          className="shrink-0 w-14 flex flex-col items-center py-3 gap-1 overflow-y-auto"
-          style={{ background: 'rgba(10,25,27,0.7)', backdropFilter: 'blur(16px)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
-          <button onClick={toggleNav} aria-label="Expand sections" title="Expand sections"
-            className="w-9 h-9 flex items-center justify-center rounded-md text-brand-teal mb-1 transition-colors"
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <ChevronsRight size={16} />
-          </button>
-          {navItems.map(item => (
-            <button key={item.key} title={item.label} aria-label={item.label}
-              onClick={() => { setSection(item.key); setActiveFactorName(null); if (item.key === 'financial') setFinOpen(true); }}
-              className={`w-9 h-9 flex items-center justify-center rounded-md transition-colors ${section === item.key ? 'nav-item-active' : 'nav-item-inactive'}`}>
-              <item.icon size={17} />
-            </button>
-          ))}
-        </nav>
-      )}
-
-      {/* Main content */}
-      <div className="flex-1 min-w-0 overflow-y-auto">
+    <div className="min-h-full page-fade">
+      {/* Main content — full width; Tier-2 nav is now the horizontal bar below (§5) */}
+      <div className="min-w-0">
         {/* Up-control + breadcrumb, above the header (§2a/§2b). */}
         <div className="px-6 pt-4">
           <PageNav
@@ -341,10 +254,11 @@ export const CompanyPage: React.FC = () => {
           />
         </div>
 
-        {/* Header — full on Overview, slim on every other section */}
+        {/* Header — full on Overview, slim on every other section. Not sticky: the
+            horizontal section bar below is the sticky element, so they can't overlap. */}
         {section === 'overview' ? (
-          <div className="glass-card-elevated px-6 py-5 sticky top-0"
-            style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)', zIndex: 'var(--z-page-header)' as unknown as number }}>
+          <div className="glass-card-elevated px-6 py-5"
+            style={{ borderRadius: 0, backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-start gap-5 flex-wrap">
               <div className="flex-1 min-w-0">
                 {/* Issuer-level header. No recommendation, Total Score or Rating —
@@ -378,7 +292,7 @@ export const CompanyPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="sticky top-0 z-10 px-6 h-12 flex items-center gap-3"
+          <div className="px-6 h-12 flex items-center gap-3"
             style={{ background: 'rgba(11,31,32,0.92)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <h1 className="text-sm font-semibold text-primary-text truncate">{company.name}</h1>
             <span className="text-xs text-muted-text truncate hidden sm:inline">· {company.subSector}</span>
@@ -391,6 +305,17 @@ export const CompanyPage: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Tier-2 contextual nav — horizontal, sticky (§5). Only on the company page. */}
+        <SectionBar<Section, string>
+          items={navItems.map(n => ({ key: n.key, label: n.label, icon: n.icon }))}
+          active={section}
+          onSelect={k => { setSection(k); setActiveFactorName(null); }}
+          subParent={'financial'}
+          subItems={finChildren.map(c => ({ key: c.tab, label: c.label }))}
+          activeSub={financialTab}
+          onSelectSub={t => { setSection('financial'); setFinancialTab(t); }}
+        />
 
         {/* No report → placeholder. An issuer can still carry ISIN-level coverage
             (Midland does), so surface its instruments rather than a dead end. */}

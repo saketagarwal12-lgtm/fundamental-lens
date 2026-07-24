@@ -4,7 +4,6 @@ import { TrendingUp, TrendingDown, AlertCircle, Plus, Settings2 } from 'lucide-r
 import { ScoreRing } from '../../components/ScoreRing';
 import { Sparkline } from '../../components/Sparkline';
 import { PortfolioFundamentalScore } from '../../components/PortfolioFundamentalScore';
-import { GlobalSearch } from '../../components/GlobalSearch';
 import { portfolioHoldings } from '../../data/portfolio';
 import { getPortfolioScore } from '../../data/score';
 
@@ -42,11 +41,7 @@ export const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Search a company or ISIN */}
-      <div className="glass-card p-4 mb-5">
-        <p className="t-eyebrow mb-2">Search coverage</p>
-        <GlobalSearch placeholder="Search a company or an ISIN (e.g. Keertana, or INE0NES…)" />
-      </div>
+      {/* Search lives once, in the top bar (§4) — the hero duplicate was removed. */}
 
       {/* Portfolio Fundamental Score hero */}
       <PortfolioFundamentalScore holdings={portfolioHoldings} />

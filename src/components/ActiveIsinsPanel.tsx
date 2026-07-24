@@ -16,7 +16,8 @@ interface Props {
 const Cell: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
   <div className="min-w-0">
     <p className="text-[10px] text-muted-text mb-0.5">{label}</p>
-    <p className="text-xs font-mono-nums text-primary-text truncate">{value}</p>
+    {/* Truncated values carry a title so the full text is recoverable on hover (§9). */}
+    <p className="text-xs font-mono-nums text-primary-text truncate" title={typeof value === 'string' ? value : undefined}>{value}</p>
   </div>
 );
 

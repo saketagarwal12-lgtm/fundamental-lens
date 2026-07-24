@@ -57,8 +57,8 @@ export const UserMenu: React.FC<Props> = ({ userName, role, accent = '#2DD4BF', 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden z-[80]"
-          style={{ background: '#0F2629', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 20px 48px rgba(0,0,0,0.6)' }}
+          className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden"
+          style={{ zIndex: 'var(--z-user-menu)' as unknown as number, background: '#0F2629', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 20px 48px rgba(0,0,0,0.6)' }}
         >
           {/* Identity */}
           <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>

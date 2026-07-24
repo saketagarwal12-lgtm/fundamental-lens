@@ -1,8 +1,19 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Building2, ShieldCheck, Scale, AlertTriangle, Globe, Layers, Coins,
 } from 'lucide-react';
 import { PageNav } from '../../components/PageNav';
+import { SectionBar } from '../../components/SectionBar';
+
+// Anchor targets for the ISIN page's sticky section bar (§5).
+const ISIN_SECTIONS = [
+  { key: 'overview', label: 'Overview', icon: Layers },
+  { key: 'fundamental', label: 'Fundamental (shared)', icon: Layers },
+  { key: 'issuance', label: 'Issuance', icon: ShieldCheck },
+  { key: 'pricing', label: 'Pricing', icon: Coins },
+  { key: 'economic', label: 'Economic & Sector', icon: Globe },
+];
 import { ScoreGauge } from '../../components/ScoreGauge';
 import { ScoreComposition } from '../../components/ScoreComposition';
 import { FactorHeatmap } from '../../components/FactorHeatmap';
@@ -28,10 +39,12 @@ import {
 // ── Small building blocks ────────────────────────────────────────────────────
 
 const Section: React.FC<{
+  id?: string;
   title: string; score: string; grade?: React.ReactNode; icon: typeof Globe;
   shared?: boolean; children: React.ReactNode;
-}> = ({ title, score, grade, icon: Icon, shared, children }) => (
-  <section className="space-y-4">
+}> = ({ id, title, score, grade, icon: Icon, shared, children }) => (
+  // scroll-margin-top clears the sticky section bar when an anchor is scrolled to.
+  <section id={id} className="space-y-4" style={{ scrollMarginTop: 64 }}>
     <div className="flex items-center gap-3 flex-wrap">
       <Icon size={16} className="text-brand-teal shrink-0" />
       <h2 className="t-h2 text-primary-text">{title}</h2>
@@ -111,6 +124,27 @@ export const IsinPage: React.FC = () => {
   const navigate = useNavigate();
 
   const a = getIsinAssessment(isin);
+
+  // Hooks must run unconditionally, before any early return.
+  const [activeSection, setActiveSection] = useState('overview');
+
+  // Scroll-spy: highlight the pill for whichever section is nearest the top.
+  useEffect(() => {
+    const els = ISIN_SECTIONS
+      .map(s => document.getElementById(`isin-${s.key}`))
+      .filter((el): el is HTMLElement => !!el);
+    if (!els.length) return;
+    const obs = new IntersectionObserver(
+      entries => {
+        const visible = entries.filter(e => e.isIntersecting).sort((x, y) => y.intersectionRatio - x.intersectionRatio);
+        if (visible[0]) setActiveSection(visible[0].target.id.replace('isin-', ''));
+      },
+      { rootMargin: '-64px 0px -55% 0px', threshold: [0.1, 0.5] },
+    );
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, [isin]);
+
   if (!a) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
@@ -239,8 +273,20 @@ export const IsinPage: React.FC = () => {
         </div>
       ) : (
         <>
+          {/* Tier-2 anchor nav — horizontal, sticky (§5). Scrolls to each assessment. */}
+          <div className="-mx-6">
+            <SectionBar<string, string>
+              items={ISIN_SECTIONS}
+              active={activeSection}
+              onSelect={k => {
+                setActiveSection(k);
+                document.getElementById(`isin-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            />
+          </div>
+
           {/* ── Total Score composition ── */}
-          <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section id="isin-overview" style={{ scrollMarginTop: 64 }} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <ScoreComposition
               components={components}
               scorecard={scorecard}
@@ -257,7 +303,7 @@ export const IsinPage: React.FC = () => {
           </section>
 
           {/* ── 1 · Fundamental (shared) ── */}
-          <Section title="Fundamental" score={`${score.fundamental} / 200`} icon={Layers} shared
+          <Section id="isin-fundamental" title="Fundamental" score={`${score.fundamental} / 200`} icon={Layers} shared
             grade={fundamental ? <GradeBadge grade={gradeForPct(fundamental.pct)} compact /> : undefined}>
             <div className="grid gap-4 md:grid-cols-2">
               {fundamental?.pillars.map(p => (
@@ -273,7 +319,7 @@ export const IsinPage: React.FC = () => {
           </Section>
 
           {/* ── 2 · Issuance (this ISIN) ── */}
-          <Section title="Issuance assessment" score={`${score.issuance} / 100`} icon={ShieldCheck}
+          <Section id="isin-issuance" title="Issuance assessment" score={`${score.issuance} / 100`} icon={ShieldCheck}
             grade={a.issuance ? <GradeBadge grade={a.issuance.grade} compact /> : undefined}>
             {a.issuance && a.issuance.factors.length > 0 ? (
               <FactorHeatmap factors={a.issuance.factors.map(f => ({ name: f.label, grade: f.grade, pct: f.pct }))} />
@@ -353,7 +399,7 @@ export const IsinPage: React.FC = () => {
           </Section>
 
           {/* ── 3 · Pricing (this ISIN) ── */}
-          <Section title="Pricing & yield" score={`${score.pricing} / 150`} icon={Coins}
+          <Section id="isin-pricing" title="Pricing & yield" score={`${score.pricing} / 150`} icon={Coins}
             grade={a.pricing ? <GradeBadge grade={a.pricing.grade} compact /> : undefined}>
             {a.pricing && (
               <>
@@ -420,7 +466,7 @@ export const IsinPage: React.FC = () => {
           </Section>
 
           {/* ── 4 · Economic & Sector (shared) ── */}
-          <Section title="Economic & sector" score={`${score.economic} / 50`} icon={Globe} shared
+          <Section id="isin-economic" title="Economic & sector" score={`${score.economic} / 50`} icon={Globe} shared
             grade={economic ? <GradeBadge grade={economic.grade} compact /> : undefined}>
             <div className="glass-card p-5">
               <FactorHeatmap factors={(economic?.factors ?? []).map(f => ({ name: f.label, grade: f.grade, pct: f.pct }))} />

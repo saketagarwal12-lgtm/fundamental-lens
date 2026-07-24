@@ -384,6 +384,34 @@ duplicate history entry. Keyboard-focusable with a visible ring, `aria-label="Fu
 
 ---
 
+## 7b. Layout & UI conventions (§4–§9)
+
+- **One search bar.** `GlobalSearch` mounts once, in each layout's top bar. The dashboard-hero
+  duplicate was removed (§4). No `/app/*` route renders two search inputs.
+- **Tier-2 is a horizontal `SectionBar`** (`components/SectionBar.tsx`), not a side panel (§5).
+  Sticky under the page header, horizontal scroll with an edge fade (never wraps), roving-focus
+  keyboard nav (arrow keys + Enter). The old vertical aside, its 56px collapsed icon rail and the
+  chevron toggle are gone; content is now full-width.
+  - Company page: pills are the section keys; **Financial Analysis** shows a second-level pill row
+    (Capitalization · Funding & liquidity · Profitability · Asset quality) when active.
+  - ISIN page: pills (Overview · Fundamental (shared) · Issuance · Pricing · Economic & Sector)
+    are **anchor-scroll** with an IntersectionObserver scroll-spy; sections carry `id="isin-*"` and
+    `scroll-margin-top` to clear the sticky bar.
+  - **Headers are no longer sticky** — the section bar is the sole sticky element, so they can't
+    overlap. Only the layout `<main>` scrolls (no nested `overflow-y-auto`), so no double scrollbars.
+- **z-index scale** in `index.css` (`--z-*`): sticky-table-head 20 · page-header 30 · section-bar 40
+  · rail-flyout 50 · dropdown 60 · user-menu 80 · tooltip 90 · modal 100. Use the var, not a new
+  magic number. `.overlay-surface` is the opaque dropdown/menu surface (§7.1) — the search dropdown
+  and any menu that must not let content bleed through use it.
+- **Score-trend box** is ~35% shorter (height 180, was 280), full width kept, gauge unchanged (§6).
+
+> **Known tension (not a bug):** `WeightageWhatIf` (the "Adjust weightage" premium teaser on the
+> company page) shows a `/500` what-if total, which is instrument-level by §1's rule. It is kept
+> because it is explicitly labelled *"What-if — not the published score"* and §1b's remove-list
+> doesn't name it. If strict issuer/ISIN separation is wanted, move this section to the ISIN page.
+
+---
+
 ## 8. Navigation pattern (two-tier)
 
 - **Tier 1** — permanent slim icon rail (`IconRail`), never collapses, hover flyout for labels.

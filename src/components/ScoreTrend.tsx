@@ -79,8 +79,8 @@ export const ScoreTrend: React.FC<Props> = ({ data, title = 'Fundamental Score â
   const priceOn = hasPrice && showPrice;
 
   return (
-    <div className="glass-card p-5 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+    <div className="glass-card p-4 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-semibold text-primary-text text-sm">{title}</h3>
           {badge && (
@@ -155,7 +155,7 @@ export const ScoreTrend: React.FC<Props> = ({ data, title = 'Fundamental Score â
           )}
         </ComposedChart>
       </ResponsiveContainer>
-      <p className="text-[11px] text-muted-text mt-2">
+      <p className="text-[11px] text-muted-text mt-1.5">
         Hover a point with an arrow to see why the score moved.
         {hasPrice && <span> Share price is illustrative mock data.</span>}
       </p>
